@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>主持人字幕条</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&family=Noto+Serif+SC:wght@600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --rose: #772b2c;
+        --rose-b: #a03c3d;
+        --blue: #1a3a6e;
+        --blue-b: #85e0f0;
+        --green: #1a5c2e;
+        --green-b: #39e3a7;
+        --purple: #5a1a6e;
+        --purple-b: #c972eb;
+        --teal: #1a5a5a;
+        --teal-b: #2d8a8a;
+        --white: #fff;
+        --dark: #2c2c2e;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: transparent;
+        font-family: "Noto Sans SC", sans-serif;
+        overflow: hidden;
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+      }
+
+      .hosts-wrap {
+        position: absolute;
+        bottom: 80px;
+        left: 80px;
+        right: 80px;
+        display: flex;
+        gap: 80px;
+        justify-content: space-between;
+        align-items: flex-end;
+        z-index: 10;
+        pointer-events: none;
+        transition: opacity 0.35s ease, bottom 0.3s ease, left 0.3s ease;
+      }
+      .hosts-wrap.master-hidden {
+        opacity: 0;
+      }
+
+      .slot {
+        display: flex;
+        align-items: stretch;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(30px);
+        transition:
+          transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .slot.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .slot.hiding {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: transform 0.18s ease, opacity 0.12s ease;
+      }
+      .slot.swap-out {
+        opacity: 0;
+        transform: translateY(80px);
+        transition: transform 0.18s cubic-bezier(0.4, 0, 1, 1), opacity 0.12s ease;
+      }
+      .slot.swap-in {
+        opacity: 1;
+        transform: translateY(0);
+        transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .lt-prefix {
+        position: relative;
+        padding: 14px 18px 14px 22px;
+        border-radius: 6px 0 0 6px;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+      }
+      .lt-prefix::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 45%;
+        background: linear-gradient(180deg, rgba(255,255,255,0.07), transparent);
+        pointer-events: none;
+      }
+      .lt-prefix::after {
+        content: "";
+        position: absolute;
+        top: 8px; bottom: 8px; right: -1px;
+        width: 3px;
+        background: var(--gold-b);
+        border-radius: 1px;
+        opacity: 0.8;
+      }
+      .lt-prefix-text {
+        font-family: "Noto Serif SC", serif;
+        font-size: 26px;
+        font-weight: 900;
+        color: var(--white);
+        letter-spacing: 0.12em;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        white-space: nowrap;
+      }
+      .lt-info {
+        position: relative;
+        background: rgba(255,255,255,0.95);
+        border: 1px solid rgba(0,0,0,0.06);
+        border-left: none;
+        padding: 14px 28px 14px 22px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        border-radius: 0 6px 6px 0;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+        overflow: hidden;
+      }
+      .lt-name {
+        font-family: "Noto Serif SC", serif;
+        font-size: 26px;
+        font-weight: 900;
+        color: var(--dark);
+        letter-spacing: 0.06em;
+        white-space: nowrap;
+      }
+      .lt-divider {
+        width: 2px;
+        height: 22px;
+        background: rgba(0,0,0,0.12);
+        flex-shrink: 0;
+        border-radius: 1px;
+      }
+      .lt-class {
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        white-space: nowrap;
+      }
+
+      .slot.mirrored { flex-direction: row-reverse; }
+      .slot.mirrored .lt-prefix { border-radius: 0 6px 6px 0; }
+      .slot.mirrored .lt-prefix::after { right: auto; left: -1px; }
+      .slot.mirrored .lt-info {
+        border-radius: 6px 0 0 6px;
+        border-left: 1px solid rgba(0,0,0,0.06);
+        border-right: none;
+      }
+
+      .color-rose .lt-prefix { background: linear-gradient(135deg, var(--rose), var(--rose-b)); }
+      .color-rose .lt-class { color: var(--rose); }
+      .color-blue .lt-prefix { background: linear-gradient(135deg, var(--blue), var(--blue-b)); }
+      .color-blue .lt-class { color: var(--blue); }
+      .color-gold .lt-prefix { background: linear-gradient(135deg, var(--gold), var(--gold-b)); }
+      .color-gold .lt-class { color: var(--gold); }
+      .color-green .lt-prefix { background: linear-gradient(135deg, var(--green), var(--green-b)); }
+      .color-green .lt-class { color: var(--green); }
+      .color-purple .lt-prefix { background: linear-gradient(135deg, var(--purple), var(--purple-b)); }
+      .color-purple .lt-class { color: var(--purple); }
+      .color-teal .lt-prefix { background: linear-gradient(135deg, var(--teal), var(--teal-b)); }
+      .color-teal .lt-class { color: var(--teal); }
+    </style>
+  </head>
+  <body>
+    <div class="hosts-wrap" id="hostsWrap">
+      <div class="slot color-rose" id="slot0">
+        <div class="lt-prefix"><span class="lt-prefix-text">主持人</span></div>
+        <div class="lt-info">
+          <span class="lt-name" id="s0Name">加载中…</span>
+          <span class="lt-divider" id="s0Div" style="display:none"></span>
+          <span class="lt-class" id="s0Class"></span>
+        </div>
+      </div>
+      <div class="slot color-blue" id="slot1">
+        <div class="lt-prefix"><span class="lt-prefix-text">主持人</span></div>
+        <div class="lt-info">
+          <span class="lt-name" id="s1Name">加载中…</span>
+          <span class="lt-divider" id="s1Div" style="display:none"></span>
+          <span class="lt-class" id="s1Class"></span>
+        </div>
+      </div>
+      <div class="slot color-green" id="slot2">
+        <div class="lt-prefix"><span class="lt-prefix-text">主持人</span></div>
+        <div class="lt-info">
+          <span class="lt-name" id="s2Name">加载中…</span>
+          <span class="lt-divider" id="s2Div" style="display:none"></span>
+          <span class="lt-class" id="s2Class"></span>
+        </div>
+      </div>
+      <div class="slot color-purple" id="slot3">
+        <div class="lt-prefix"><span class="lt-prefix-text">主持人</span></div>
+        <div class="lt-info">
+          <span class="lt-name" id="s3Name">加载中…</span>
+          <span class="lt-divider" id="s3Div" style="display:none"></span>
+          <span class="lt-class" id="s3Class"></span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var hosts = [];
+      var hostSlotCount = 2;
+      var hostsAllHidden = false;
+      var hostX = 80;
+      var hostY = 80;
+      var slots = [
+        { idx: 0, hidden: false, color: "rose", busy: false },
+        { idx: 0, hidden: false, color: "blue", busy: false },
+        { idx: 0, hidden: false, color: "green", busy: false },
+        { idx: 0, hidden: false, color: "purple", busy: false },
+      ];
+
+      function rs() {
+        return hostSlotCount <= 1 ? hostSlotCount : Math.ceil(hostSlotCount / 2);
+      }
+
+      function setContent(i) {
+        var s = slots[i],
+          h = s.idx >= 0 && s.idx < hosts.length ? hosts[s.idx] : null;
+        document.getElementById("s" + i + "Name").textContent = h ? h.name || "" : "暂无主持人";
+        document.getElementById("s" + i + "Class").textContent = h ? h.title || "" : "";
+        document.getElementById("s" + i + "Div").style.display = h && h.title ? "block" : "none";
+      }
+
+      function applyHostPosition() {
+        var wrap = document.getElementById("hostsWrap");
+        wrap.style.left = hostX + "px";
+        wrap.style.bottom = hostY + "px";
+        wrap.style.right = hostX + "px";
+      }
+
+      function refresh() {
+        var wrap = document.getElementById("hostsWrap");
+        wrap.className = "hosts-wrap" + (hostsAllHidden ? " master-hidden" : "");
+        var rStart = rs();
+        for (var i = 0; i < 4; i++) {
+          var el = document.getElementById("slot" + i),
+            s = slots[i];
+          if (i >= hostSlotCount) {
+            el.style.display = "none";
+            continue;
+          }
+          el.style.display = "";
+          var isR = i >= rStart;
+          var autoML = hostSlotCount === 4 && i === rStart ? "auto" : "";
+          el.style.marginLeft = autoML;
+          var cc = "slot color-" + (s.color || "rose") + (isR ? " mirrored" : "");
+          el.className = cc + (hostsAllHidden || s.hidden ? " hiding" : " visible");
+          setContent(i);
+        }
+        applyHostPosition();
+      }
+
+      function goTo(i, t) {
+        if (!hosts.length) return;
+        var s = slots[i];
+        t = Math.max(0, Math.min(t, hosts.length - 1));
+        if (t === s.idx || s.busy) return;
+        s.idx = t;
+        s.busy = true;
+        var el = document.getElementById("slot" + i);
+        var isR = i >= rs();
+        var cc = "slot color-" + (s.color || "rose") + (isR ? " mirrored" : "");
+        if (!s.hidden && !hostsAllHidden && i < hostSlotCount) {
+          el.className = cc + " swap-out";
+          setTimeout(function () {
+            setContent(i);
+            el.className = cc + " swap-in";
+            setTimeout(function () {
+              el.className = cc + " visible";
+              s.busy = false;
+            }, 400);
+          }, 200);
+        } else {
+          setContent(i);
+          s.busy = false;
+        }
+      }
+
+      function toggleSlot(i) {
+        slots[i].hidden = !slots[i].hidden;
+        refresh();
+        pushState();
+      }
+      function toggleAll() {
+        hostsAllHidden = !hostsAllHidden;
+        refresh();
+        pushState();
+      }
+
+      function pushState() {
+        var hs = [];
+        for (var i = 0; i < 4; i++)
+          hs.push({ hostIndex: slots[i].idx, hidden: slots[i].hidden, color: slots[i].color });
+        fetch("/api/state", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            hostsAllHidden: hostsAllHidden,
+            hostSlotCount: hostSlotCount,
+            hostSlots: hs,
+            hostHidden: hostsAllHidden,
+            hostX: hostX,
+            hostY: hostY,
+            leftHostHidden: slots[0].hidden || hostsAllHidden,
+            leftHostIndex: slots[0].idx,
+            leftColor: slots[0].color,
+            rightHostHidden: slots[1].hidden || hostsAllHidden,
+            rightHostIndex: slots[1].idx,
+            rightColor: slots[1].color,
+          }),
+        }).catch(function () {});
+      }
+
+      function applySSEData(d) {
+        var changed = false;
+        
+        if (d.hostSlotCount !== undefined && d.hostSlotCount !== hostSlotCount) {
+          hostSlotCount = Math.max(1, Math.min(4, d.hostSlotCount));
+          changed = true;
+        }
+        if (d.hostsAllHidden !== undefined && d.hostsAllHidden !== hostsAllHidden) {
+          hostsAllHidden = d.hostsAllHidden;
+          changed = true;
+        } else if (d.hostHidden !== undefined && d.hostHidden !== hostsAllHidden) {
+          hostsAllHidden = d.hostHidden;
+          changed = true;
+        }
+        if (d.hostX !== undefined && d.hostX !== hostX) {
+          hostX = d.hostX;
+          changed = true;
+        }
+        if (d.hostY !== undefined && d.hostY !== hostY) {
+          hostY = d.hostY;
+          changed = true;
+        }
+        if (d.hostSlots && Array.isArray(d.hostSlots)) {
+          for (var i = 0; i < Math.min(d.hostSlots.length, 4); i++) {
+            var ds = d.hostSlots[i];
+            if (ds.hostIndex !== undefined && ds.hostIndex !== slots[i].idx)
+              goTo(i, ds.hostIndex);
+            if (ds.hidden !== undefined && ds.hidden !== slots[i].hidden) {
+              slots[i].hidden = ds.hidden;
+              changed = true;
+            }
+            if (ds.color !== undefined && ds.color !== slots[i].color) {
+              slots[i].color = ds.color;
+              changed = true;
+            }
+          }
+        } else {
+          if (d.leftHostIndex !== undefined && d.leftHostIndex !== slots[0].idx)
+            goTo(0, d.leftHostIndex);
+          if (d.leftHostHidden !== undefined && d.leftHostHidden !== slots[0].hidden) {
+            slots[0].hidden = d.leftHostHidden;
+            changed = true;
+          }
+          if (d.leftColor !== undefined && d.leftColor !== slots[0].color) {
+            slots[0].color = d.leftColor;
+            changed = true;
+          }
+          if (d.rightHostIndex !== undefined && d.rightHostIndex !== slots[1].idx)
+            goTo(1, d.rightHostIndex);
+          if (d.rightHostHidden !== undefined && d.rightHostHidden !== slots[1].hidden) {
+            slots[1].hidden = d.rightHostHidden;
+            changed = true;
+          }
+          if (d.rightColor !== undefined && d.rightColor !== slots[1].color) {
+            slots[1].color = d.rightColor;
+            changed = true;
+          }
+        }
+        if (d.hosts && d.hosts.length > 0) {
+          var nh = JSON.stringify(d.hosts);
+          if (nh !== JSON.stringify(hosts)) {
+            hosts = d.hosts;
+            for (var i = 0; i < 4; i++) {
+              if (slots[i].idx >= hosts.length)
+                slots[i].idx = Math.max(0, hosts.length - 1);
+              setContent(i);
+            }
+            changed = true;
+          }
+        }
+        if (changed) refresh();
+      }
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "0") { e.preventDefault(); toggleAll(); }
+        if (e.key >= "1" && e.key <= "4") {
+          var idx = parseInt(e.key) - 1;
+          if (idx < hostSlotCount) { e.preventDefault(); toggleSlot(idx); }
+        }
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault(); goTo(0, slots[0].idx + 1); pushState();
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault(); goTo(0, slots[0].idx - 1); pushState();
+        }
+      });
+
+      function loadHosts() {
+        fetch("/hosts.json")
+          .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+          .then(function (d) { if (Array.isArray(d) && d.length > 0) hosts = d; initDisplay(); })
+          .catch(function () {
+            fetch("/api/state")
+              .then(function (r) { return r.json(); })
+              .then(function (d) { if (d.hosts && d.hosts.length > 0) hosts = d.hosts; initDisplay(); })
+              .catch(function () {
+                for (var i = 0; i < 4; i++)
+                  document.getElementById("s" + i + "Name").textContent = "未找到主持人数据";
+              });
+          });
+      }
+
+      function initDisplay() {
+        if (!hosts.length) {
+          for (var i = 0; i < 4; i++)
+            document.getElementById("s" + i + "Name").textContent = "暂无主持人";
+          refresh();
+          return;
+        }
+        fetch("/api/lite-state")
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d.hostSlotCount !== undefined)
+              hostSlotCount = Math.max(1, Math.min(4, d.hostSlotCount));
+            if (d.hostsAllHidden !== undefined) hostsAllHidden = !!d.hostsAllHidden;
+            else if (d.hostHidden !== undefined) hostsAllHidden = !!d.hostHidden;
+            if (d.hostX !== undefined) hostX = d.hostX;
+            if (d.hostY !== undefined) hostY = d.hostY;
+            if (d.hostSlots && Array.isArray(d.hostSlots)) {
+              for (var i = 0; i < Math.min(d.hostSlots.length, 4); i++) {
+                var ds = d.hostSlots[i];
+                if (ds.hostIndex !== undefined) slots[i].idx = Math.min(ds.hostIndex, hosts.length - 1);
+                if (ds.color !== undefined) slots[i].color = ds.color;
+              }
+            } else {
+              if (d.leftHostIndex !== undefined) slots[0].idx = Math.min(d.leftHostIndex, hosts.length - 1);
+              if (d.leftColor !== undefined) slots[0].color = d.leftColor;
+              if (d.rightHostIndex !== undefined) slots[1].idx = Math.min(d.rightHostIndex, hosts.length - 1);
+              if (d.rightColor !== undefined) slots[1].color = d.rightColor;
+            }
+            refresh();
+            pushState();
+          })
+          .catch(function () { refresh(); pushState(); });
+      }
+
+      refresh();
+      loadHosts();
+      
+      setTimeout(function () {
+        var evtSrc = new EventSource("/api/events");
+        evtSrc.onmessage = function(e) {
+          try {
+            var d = JSON.parse(e.data);
+            applySSEData(d);
+          } catch(ex) {}
+        };
+        evtSrc.onerror = function() {
+          evtSrc.close();
+          setInterval(function() {
+            fetch("/api/lite-state")
+              .then(function(r) { return r.json(); })
+              .then(function(d) { applySSEData(d); })
+              .catch(function() {});
+          }, 2000);
+        };
+      }, 300);
+    </script>
+  </body>
+</html>

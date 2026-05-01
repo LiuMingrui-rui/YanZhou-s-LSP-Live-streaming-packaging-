@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>赛事转播 Logo 挂角</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: transparent;
+    overflow: hidden;
+    width: 1920px;
+    height: 1080px;
+  }
+
+  #overlay {
+    transition: opacity 0.6s ease;
+  }
+  #overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .logo-container {
+    position: fixed;
+    top: 20px;
+    left: 80px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    animation: container-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes container-enter {
+    from { opacity: 0; transform: translateX(-30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .logo-text-wrap {
+    position: relative;
+    padding: 10px 24px 10px 18px;
+  }
+  .accent-bar {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 5px;
+    height: 56px;
+    background: linear-gradient(180deg, #772B2C, #a03c3d);
+    border-radius: 0 3px 3px 0;
+    box-shadow: 0 0 14px rgba(119,43,44,0.5);
+  }
+  .logo-cn {
+    font-family: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 40px;
+    font-weight: 700;
+    color: #772B2C;
+    letter-spacing: 5px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    line-height: 1;
+  }
+
+  .live-indicator {
+    position: fixed;
+    top: 50px;
+    right: 50px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 24px;
+    animation: live-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes live-enter {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  .live-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #772B2C;
+    box-shadow: 0 0 14px rgba(119,43,44,0.7);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { transform: scale(1);   opacity: 1; }
+    50%      { transform: scale(1.4); opacity: 0.6; }
+  }
+  .live-text {
+    font-family: "DM Mono", "SF Mono", "Consolas", monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: #772B2C;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 16px rgba(119,43,44,0.5);
+  }
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div class="live-indicator">
+    <div class="live-dot"></div>
+    <span class="live-text">LIVE</span>
+  </div>
+
+  <div class="logo-container" id="logoContainer">
+    <div class="logo-text-wrap">
+      <div class="accent-bar"></div>
+      <span class="logo-cn">YZBTVS</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  var overlay = document.getElementById('overlay');
+  var logoContainer = document.getElementById('logoContainer');
+
+  var _lastLH = null;
+  var _lastLX = null;
+  var _lastLY = null;
+
+  function applyState(d) {
+    if (d.logoHidden !== undefined && d.logoHidden !== _lastLH) {
+      _lastLH = d.logoHidden;
+      overlay.classList.toggle('hidden', d.logoHidden);
+    }
+    if (d.logoX !== undefined && d.logoX !== _lastLX) {
+      _lastLX = d.logoX;
+      logoContainer.style.left = d.logoX + 'px';
+    }
+    if (d.logoY !== undefined && d.logoY !== _lastLY) {
+      _lastLY = d.logoY;
+      logoContainer.style.top = d.logoY + 'px';
+    }
+  }
+
+  fetch('/api/state').then(function(r) {
+    if (!r.ok) throw new Error('fail');
+    return r.json();
+  }).then(applyState).catch(function() {});
+
+  setInterval(function() {
+    fetch('/api/state').then(function(r) {
+      if (!r.ok) throw new Error('fail');
+      return r.json();
+    }).then(applyState).catch(function() {});
+  }, 150);
+</script>
+</body>
+</html>

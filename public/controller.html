@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+    <title>控制面板</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #0d0d12;
+        --surface: #19191f;
+        --surface2: #222229;
+        --border: rgba(255,255,255,0.07);
+        --border-focus: rgba(255,255,255,0.18);
+        --red: #ff453a;
+        --blue: #0a84ff;
+        --green: #30d158;
+        --orange: #ff9f0a;
+        --purple: #bf5af2;
+        --teal: #64d2ff;
+        --txt: #f5f5f7;
+        --txt2: #98989d;
+        --txt3: #636366;
+        --pill: rgba(255,255,255,0.06);
+        --pill-hover: rgba(255,255,255,0.1);
+        --r: 14px; --r-sm: 12px; --r-pill: 50px;
+        --rose: #ff6b6b;
+        --rose-dark: #3d1a1a;
+      }
+
+      /* 浅色主题变量 */
+      html.theme-light {
+        --bg: #f5f5f7;
+        --surface: #ffffff;
+        --surface2: #f0f0f5;
+        --border: rgba(0,0,0,0.08);
+        --border-focus: rgba(0,0,0,0.18);
+        --txt: #1d1d1f;
+        --txt2: #515154;
+        --txt3: #86868b;
+        --pill: rgba(0,0,0,0.04);
+        --pill-hover: rgba(0,0,0,0.08);
+      }
+
+      /* 动画过渡 */
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--txt); font-family: "Noto Sans SC","Segoe UI","Microsoft YaHei",sans-serif; transition: background 0.4s ease, color 0.4s ease; }
+      .app { display: flex; height: 100vh; }
+      .sidebar { width: 72px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 4px; flex-shrink: 0; z-index: 10; transition: background 0.4s ease, border-color 0.4s ease; }
+      .sb-item { width: 56px; height: 56px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: background 0.15s ease,color 0.15s ease; border: none; background: none; color: var(--txt3); font-size: 8.5px; font-weight: 600; letter-spacing: 0.3px; position: relative; user-select: none; }
+      .sb-item:hover { background: var(--pill); color: var(--txt2); }
+      .sb-item.active { background: var(--pill); color: var(--txt); }
+      .sb-item.active::before { content: ""; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; background: var(--blue); border-radius: 0 2px 2px 0; }
+      .sb-item.active svg { filter: drop-shadow(0 0 4px rgba(10,132,255,0.3)); }
+      .sb-item svg { width: 22px; height: 22px; pointer-events: none; }
+      .sb-item span { pointer-events: none; }
+      .sb-spacer { flex: 1; }
+      .sb-theme-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 8px; }
+      .sb-theme-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--txt3); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.15s ease; }
+      .sb-theme-btn:hover { background: var(--pill-hover); color: var(--txt2); border-color: var(--border-focus); }
+      .sb-theme-btn:active { transform: scale(0.92); }
+      .sb-theme-btn svg { width: 20px; height: 20px; }
+      .sb-conn-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-bottom: 12px; }
+      .sb-conn { width: 8px; height: 8px; border-radius: 50%; background: var(--txt3); transition: all 0.3s ease; }
+      .sb-conn.ok { background: var(--green); box-shadow: 0 0 8px rgba(48,209,88,0.5); }
+      .sb-conn-text { font-size: 8px; font-weight: 600; letter-spacing: 0.5px; transition: color 0.3s ease; }
+      .sb-conn-text.ok { color: var(--green); }
+      .sb-conn-text.err { color: var(--red); }
+      .main { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 24px 32px; -webkit-overflow-scrolling: touch; }
+      .main::-webkit-scrollbar { width: 6px; }
+      .main::-webkit-scrollbar-track { background: transparent; }
+      .main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+      html.theme-light .main::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }
+      .main::before { content: ""; position: fixed; top: 0; left: 72px; right: 0; height: 120px; background: linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 100%); pointer-events: none; z-index: 1; }
+      html.theme-light .main::before { background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, transparent 100%); }
+      .main > * { position: relative; z-index: 2; }
+      .main-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+      .main-title .badge { font-size: 10px; font-weight: 600; color: var(--txt2); background: var(--pill); padding: 3px 10px; border-radius: 20px; transition: background 0.4s ease; }
+      .tab { display: none; }
+      .tab.active { display: block; }
+      .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; margin-bottom: 10px; transition: box-shadow 0.2s ease, background 0.4s ease, border-color 0.4s ease; }
+      .card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.3); }
+      html.theme-light .card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.12); }
+      .card-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--txt3); margin-bottom: 8px; font-weight: 600; transition: color 0.4s ease; }
+      .score-display { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 6px 0; }
+      .score-val { font-family: "DM Mono",monospace; font-size: 56px; font-weight: 500; line-height: 1; min-width: 60px; text-align: center; }
+      .score-val.r { color: var(--red); }
+      .score-val.b { color: var(--blue); }
+      .score-val.bump { animation: bump 0.3s ease; }
+      @keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.12); } 100% { transform: scale(1); } }
+      .score-sep { font-size: 40px; color: var(--txt3); font-weight: 300; line-height: 1; transition: color 0.4s ease; }
+      .top-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+      .top-btn { flex: 1; height: 42px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--txt2); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s ease,color 0.15s ease,border-color 0.15s ease; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; user-select: none; }
+      .top-btn:hover { background: var(--surface2); color: var(--txt); border-color: var(--border-focus); }
+      .top-btn:active { transform: scale(0.97); }
+      .top-btn.swap { color: var(--teal); border-color: rgba(100,210,255,0.18); }
+      .top-btn.swap:hover { background: rgba(100,210,255,0.08); }
+      .top-btn.hide-btn { color: var(--orange); border-color: rgba(255,159,10,0.15); }
+      .top-btn.hide-btn:hover { background: rgba(255,159,10,0.08); }
+      .team-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+      .team-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px; border-left: 3px solid var(--red); transition: background 0.4s ease, border-color 0.4s ease; }
+      .team-box.blue { border-left-color: var(--blue); }
+      .team-box input { width: 100%; height: 30px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--pill); color: var(--txt); font-size: 12px; font-weight: 500; padding: 0 12px; outline: none; transition: border 0.2s ease,box-shadow 0.2s ease, background 0.4s ease, color 0.4s ease; font-family: inherit; }
+      .team-box input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(255,255,255,0.05); }
+      html.theme-light .team-box input:focus { box-shadow: 0 0 0 3px rgba(0,0,0,0.04); }
+      .team-box input + input { margin-top: 5px; }
+      .team-box input::placeholder { color: var(--txt3); }
+      .toggle-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; font-weight: 500; color: var(--txt2); transition: color 0.4s ease; }
+      .toggle-row label { cursor: pointer; user-select: none; }
+      .toggle-row input[type="checkbox"] { accent-color: var(--green); width: 15px; height: 15px; }
+      .score-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .score-col { display: flex; flex-direction: column; gap: 6px; }
+      .score-col .col-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; }
+      .score-col.red .col-label { color: var(--red); }
+      .score-col.blue .col-label { color: var(--blue); }
+      .score-btns { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }
+      .sbn { height: 38px; border: none; border-radius: var(--r-pill); font-family: "DM Mono",monospace; font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.12s ease, transform 0.12s ease; user-select: none; letter-spacing: 0.5px; }
+      .sbn:active { transform: scale(0.93); }
+      .sbn.plus { background: rgba(48,209,88,0.12); color: var(--green); }
+      .sbn.plus:hover { background: rgba(48,209,88,0.22); }
+      .sbn.minus { background: var(--pill); color: var(--txt2); transition: background 0.12s ease, color 0.12s ease; }
+      .sbn.minus:hover { background: var(--pill-hover); color: var(--txt); }
+      .foul-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .foul-box { background: var(--surface); border-radius: var(--r-sm); padding: 10px; text-align: center; transition: background 0.4s ease; }
+      .foul-box.red { border-top: 2px solid var(--red); }
+      .foul-box.blue { border-top: 2px solid var(--blue); }
+      .foul-label { font-size: 9px; color: var(--txt2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; font-weight: 600; transition: color 0.4s ease; }
+      .foul-num { font-family: "DM Mono",monospace; font-size: 24px; font-weight: 500; margin-bottom: 6px; }
+      .foul-btns { display: flex; gap: 5px; justify-content: center; }
+      .fbt { width: 36px; height: 28px; border: none; border-radius: var(--r-pill); font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.12s ease, transform 0.12s ease; user-select: none; font-family: inherit; }
+      .fbt:active { transform: scale(0.9); }
+      .fbt.plus { background: rgba(48,209,88,0.12); color: var(--green); }
+      .fbt.plus:hover { background: rgba(48,209,88,0.22); }
+      .fbt.minus { background: var(--pill); color: var(--txt2); transition: background 0.12s ease, color 0.12s ease; }
+      .fbt.minus:hover { background: var(--pill-hover); color: var(--txt); }
+      .actions { display: flex; gap: 6px; margin-top: 10px; }
+      .abtn { flex: 1; height: 40px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--surface); color: var(--txt2); font-size: 12px; font-weight: 600; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; user-select: none; font-family: inherit; }
+      .abtn:hover { background: var(--surface2); color: var(--txt); border-color: var(--border-focus); }
+      .abtn:active { transform: scale(0.97); }
+      .abtn.orange { color: var(--orange); border-color: rgba(255,159,10,0.15); }
+      .abtn.orange:hover { background: rgba(255,159,10,0.08); }
+      .abtn.green { color: var(--green); border-color: rgba(48,209,88,0.15); }
+      .abtn.green:hover { background: rgba(48,209,88,0.08); }
+      .abtn.red { color: var(--red); border-color: rgba(255,69,58,0.15); }
+      .abtn.red:hover { background: rgba(255,69,58,0.08); }
+      .prog-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; transition: background 0.4s ease, border-color 0.4s ease; }
+      .nav-btn { width: 36px; height: 36px; border: 1px solid var(--border); border-radius: 50%; background: var(--surface); color: var(--txt2); font-size: 14px; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease, border-color 0.15s ease; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-family: inherit; }
+      .nav-btn:hover { background: var(--surface2); color: var(--txt); border-color: var(--border-focus); }
+      .nav-btn:active { transform: scale(0.88); }
+      .nav-info { flex: 1; text-align: center; min-width: 0; }
+      .nav-num { font-family: "DM Mono",monospace; font-size: 20px; font-weight: 500; color: var(--purple); }
+      .nav-title { display: block; font-size: 14px; font-weight: 600; color: var(--txt); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.4s ease; }
+      .nav-meta { display: block; font-size: 11px; font-weight: 500; color: var(--txt2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.4s ease; }
+      .quick-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 14px; }
+      .quick-cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 10px; cursor: pointer; transition: all 0.15s ease; user-select: none; }
+      .quick-cell:hover { background: var(--surface2); border-color: var(--purple); box-shadow: 0 2px 10px rgba(191,90,242,0.12); }
+      html.theme-light .quick-cell:hover { box-shadow: 0 2px 10px rgba(191,90,242,0.08); }
+      .quick-cell:active { transform: scale(0.96); }
+      .quick-cell.current { background: rgba(191,90,242,0.1); border-color: var(--purple); box-shadow: 0 0 0 2px rgba(191,90,242,0.18); }
+      .quick-cell .qc-num { font-family: "DM Mono",monospace; font-size: 14px; font-weight: 500; color: var(--purple); margin-bottom: 2px; }
+      .quick-cell .qc-title { font-size: 11px; font-weight: 600; color: var(--txt); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.4s ease; }
+      .quick-cell .qc-type { font-size: 9px; font-weight: 500; color: var(--txt3); margin-top: 2px; transition: color 0.4s ease; }
+      .next-preview { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--teal); border-radius: var(--r-sm); padding: 10px 14px; margin-bottom: 14px; transition: background 0.4s ease, border-color 0.4s ease; }
+      .next-preview .np-label { font-size: 9px; font-weight: 600; color: var(--teal); letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 4px; }
+      .next-preview .np-title { font-size: 13px; font-weight: 600; color: var(--txt); margin-bottom: 2px; transition: color 0.4s ease; }
+      .next-preview .np-meta { font-size: 11px; font-weight: 500; color: var(--txt2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.4s ease; }
+      .next-preview.empty { opacity: 0.4; border-left-color: var(--txt3); }
+      .prog-list { display: flex; flex-direction: column; gap: 8px; }
+      .prog-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.4s ease; overflow: hidden; position: relative; }
+      .prog-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.25); }
+      html.theme-light .prog-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.1); }
+      .prog-card.editing { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(191,90,242,0.15); }
+      .prog-card.current-card { border-color: var(--green); box-shadow: 0 0 0 2px rgba(48,209,88,0.18); }
+      .prog-card.new-card { animation: cardIn 0.35s ease both; }
+      @keyframes cardIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+      .prog-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; position: relative; }
+      .prog-num { font-family: "DM Mono",monospace; font-size: 22px; font-weight: 500; color: var(--purple); min-width: 32px; }
+      .prog-type-badge { display: inline-block; font-size: 9px; font-weight: 600; letter-spacing: 0.8px; color: var(--purple); background: rgba(191,90,242,0.1); border: 1px solid rgba(191,90,242,0.18); padding: 2px 10px; border-radius: 10px; }
+      .prog-title { font-size: 15px; font-weight: 600; color: var(--txt); margin-bottom: 4px; transition: color 0.4s ease; }
+      .prog-meta { font-size: 11px; font-weight: 500; color: var(--txt2); margin-bottom: 6px; transition: color 0.4s ease; }
+      .prog-meta span { color: var(--purple); font-weight: 600; }
+      .prog-desc { font-size: 11px; font-weight: 500; color: var(--txt3); line-height: 1.6; transition: color 0.4s ease; }
+      .prog-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+      .pab { height: 30px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--surface); font-size: 11px; font-weight: 600; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; font-family: inherit; padding: 0 14px; user-select: none; }
+      .pab:active { transform: scale(0.95); }
+      .pab:hover { background: var(--surface2); }
+      .pab.edit { color: var(--purple); border-color: rgba(191,90,242,0.2); }
+      .pab.edit:hover { background: rgba(191,90,242,0.08); }
+      .pab.del { color: var(--red); border-color: rgba(255,69,58,0.18); }
+      .pab.del:hover { background: rgba(255,69,58,0.08); }
+      .pab.save { color: var(--green); border-color: rgba(48,209,88,0.2); }
+      .pab.save:hover { background: rgba(48,209,88,0.08); }
+      .pab.cancel { color: var(--txt2); transition: color 0.15s ease; }
+      .pab.add { color: var(--purple); border-style: dashed; border-color: rgba(191,90,242,0.25); }
+      .pab.add:hover { background: rgba(191,90,242,0.08); }
+      .edit-wrap { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s ease; margin-top: 0; }
+      .edit-wrap.open { grid-template-rows: 1fr; opacity: 1; margin-top: 10px; }
+      .edit-inner { overflow: hidden; }
+      .edit-fields { display: flex; flex-direction: column; gap: 6px; }
+      .edit-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+      .edit-field { display: flex; flex-direction: column; gap: 3px; }
+      .edit-field.full { grid-column: 1/-1; }
+      .edit-field label { font-size: 9px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.4s ease; }
+      .edit-field input, .edit-field textarea, .edit-field select { border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--txt); font-size: 12px; font-weight: 500; padding: 7px 10px; outline: none; transition: border 0.2s ease, box-shadow 0.2s ease, background 0.4s ease, color 0.4s ease; font-family: inherit; resize: none; }
+      .edit-field input:focus, .edit-field textarea:focus, .edit-field select:focus { border-color: var(--purple); box-shadow: 0 0 0 3px rgba(191,90,242,0.1); }
+      .edit-field input::placeholder, .edit-field textarea::placeholder { color: var(--txt3); }
+      .single-controls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+      .single-ctrl { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 12px 16px; transition: background 0.4s ease, border-color 0.4s ease; }
+      .ctrl-name { font-size: 13px; font-weight: 600; color: var(--txt); transition: color 0.4s ease; }
+      .ctrl-btns { display: flex; gap: 6px; }
+      .ctrl-btn { height: 30px; padding: 0 16px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--surface); font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; font-family: inherit; color: var(--txt3); }
+      .ctrl-btn:hover { background: var(--surface2); }
+      .ctrl-btn.active-on { color: var(--green); border-color: rgba(48,209,88,0.25); background: rgba(48,209,88,0.08); }
+      .ctrl-btn.active-off { color: var(--red); border-color: rgba(255,69,58,0.2); background: rgba(255,69,58,0.08); }
+      .global-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .gbtn { height: 48px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--txt2); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; font-family: inherit; }
+      .gbtn:hover { background: var(--surface2); color: var(--txt); }
+      .gbtn:active { transform: scale(0.97); }
+      .gbtn.hide-all { color: var(--orange); border-color: rgba(255,159,10,0.15); }
+      .gbtn.hide-all:hover { background: rgba(255,159,10,0.08); }
+      .gbtn.show-all { color: var(--green); border-color: rgba(48,209,88,0.15); }
+      .gbtn.show-all:hover { background: rgba(48,209,88,0.08); }
+      .gbtn.reset-all { color: var(--red); border-color: rgba(255,69,58,0.15); grid-column: 1/-1; }
+      .gbtn.reset-all:hover { background: rgba(255,69,58,0.08); }
+      .status-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+      .status-chip { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px; text-align: center; transition: background 0.4s ease, border-color 0.4s ease; }
+      .status-chip .label { font-size: 9px; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600; transition: color 0.4s ease; }
+      .status-chip .val { font-size: 13px; font-weight: 600; transition: color 0.2s ease; }
+      .status-chip .val.on { color: var(--green); }
+      .status-chip .val.off { color: var(--red); }
+      .json-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--txt3); margin-bottom: 10px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); transition: background 0.4s ease, border-color 0.4s ease, color 0.4s ease; }
+      .json-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+      .json-dot.err { background: var(--red); }
+      .slot-count-row { display: flex; gap: 8px; }
+      .slot-count-btn { flex: 1; height: 40px; border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); color: var(--txt2); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; font-family: inherit; user-select: none; }
+      .slot-count-btn:hover { background: var(--surface2); color: var(--txt); }
+      .slot-count-btn:active { transform: scale(0.97); }
+      .slot-count-btn.active { color: var(--green); border-color: rgba(48,209,88,0.3); background: rgba(48,209,88,0.08); box-shadow: 0 0 0 2px rgba(48,209,88,0.12); }
+      .slot-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+      .slot-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; position: relative; overflow: hidden; transition: all 0.2s ease, background 0.4s ease, border-color 0.4s ease; }
+      .slot-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.25); }
+      html.theme-light .slot-card:hover { box-shadow: 0 2px 16px rgba(0,0,0,0.1); }
+      .slot-card::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--r) var(--r) 0 0; }
+      .slot-card.c-rose::before { background: #ff6b6b; }
+      .slot-card.c-blue::before { background: #0a84ff; }
+      .slot-card.c-green::before { background: #30d158; }
+      .slot-card.c-purple::before { background: #bf5af2; }
+      .slot-card.inactive-slot { opacity: 0.25; pointer-events: none; }
+      .slot-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .slot-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+      .slot-card-title { font-size: 13px; font-weight: 700; flex: 1; }
+      .slot-hide-btn { height: 26px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-pill); background: var(--surface); font-size: 10px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; font-family: inherit; display: flex; align-items: center; gap: 4px; }
+      .slot-hide-btn:hover { background: var(--surface2); }
+      .slot-hide-btn.on { color: var(--green); border-color: rgba(48,209,88,0.25); }
+      .slot-hide-btn.off { color: var(--orange); border-color: rgba(255,159,10,0.2); }
+      .slot-nav { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+      .slot-nav .nav-btn { width: 28px; height: 28px; }
+      .slot-nav .nav-info { text-align: center; }
+      .slot-nav .nav-num { font-size: 15px; }
+      .slot-nav .nav-title { font-size: 11px; }
+      .slot-nav .nav-meta { font-size: 9px; }
+      .slot-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; margin-bottom: 8px; }
+      .slot-grid .quick-cell { padding: 5px 7px; }
+      .slot-grid .quick-cell .qc-num { font-size: 11px; }
+      .slot-grid .quick-cell .qc-title { font-size: 9px; }
+      .slot-grid .quick-cell.current { border-color: var(--green); background: rgba(48,209,88,0.08); box-shadow: 0 0 0 2px rgba(48,209,88,0.18); }
+      .slot-grid .quick-cell.current .qc-num { color: var(--green); }
+      .slot-colors { display: flex; gap: 5px; }
+      .slot-color-btn { width: 24px; height: 24px; border: 2px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.15s ease; position: relative; }
+      .slot-color-btn:hover { transform: scale(1.1); }
+      .slot-color-btn.selected { border-color: var(--txt); box-shadow: 0 0 0 2px rgba(255,255,255,0.15); }
+      html.theme-light .slot-color-btn.selected { border-color: var(--txt); box-shadow: 0 0 0 2px rgba(0,0,0,0.1); }
+      .slot-color-btn.selected::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+      .slot-color-btn.c-rose { background: #ff6b6b; }
+      .slot-color-btn.c-blue { background: #0a84ff; }
+      .slot-color-btn.c-green { background: #30d158; }
+      .slot-color-btn.c-purple { background: #bf5af2; }
+      .slider-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .slider-field { display: flex; flex-direction: column; gap: 3px; }
+      .slider-field label { font-size: 9px; font-weight: 600; color: var(--txt3); text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.4s ease; }
+      .slider-wrap { display: flex; align-items: center; gap: 8px; }
+      .slider-wrap input[type="range"] { flex: 1; height: 6px; -webkit-appearance: none; appearance: none; background: var(--pill); border-radius: 3px; outline: none; cursor: pointer; }
+      .slider-wrap input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--rose); border: 2px solid var(--surface); box-shadow: 0 1px 6px rgba(0,0,0,0.4); cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+      .slider-wrap input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+      .slider-wrap input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--rose); border: 2px solid var(--surface); box-shadow: 0 1px 6px rgba(0,0,0,0.4); cursor: pointer; }
+      .slider-val { font-family: "DM Mono",monospace; font-size: 12px; font-weight: 500; color: var(--txt); min-width: 40px; text-align: right; background: var(--pill); padding: 4px 6px; border-radius: 6px; transition: color 0.4s ease, background 0.4s ease; }
+      body::after { content: ""; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); opacity: 0.5; pointer-events: none; z-index: 9999; mix-blend-mode: overlay; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <nav class="sidebar">
+        <div class="sb-item active" data-tab="score" onclick="switchTab('score')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><span>计分板</span>
+        </div>
+        <div class="sb-item" data-tab="prog" onclick="switchTab('prog')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="14" y2="12"/><line x1="7" y1="16" x2="11" y2="16"/></svg><span>节目单</span>
+        </div>
+        <div class="sb-item" data-tab="host" onclick="switchTab('host')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg><span>主持</span>
+        </div>
+        <div class="sb-item" data-tab="logo" onclick="switchTab('logo')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M21 15l-4.5-4.5L9 18"/></svg><span>Logo</span>
+        </div>
+        <div class="sb-item" data-tab="global" onclick="switchTab('global')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg><span>全局</span>
+        </div>
+        <div class="sb-spacer"></div>
+        <div class="sb-theme-wrap">
+          <button class="sb-theme-btn" id="themeBtn" onclick="toggleTheme()" title="切换主题">
+            <svg id="themeMoonIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg id="themeSunIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+        </div>
+        <div class="sb-conn-wrap">
+          <div class="sb-conn" id="connDot"></div>
+          <span class="sb-conn-text err" id="connText">未连接</span>
+        </div>
+      </nav>
+      <div class="main">
+        <div class="tab active" id="tab-score">
+          <div class="main-title">计分板</div>
+          <div class="top-actions">
+            <button class="top-btn swap" onclick="swp()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M7 16l-4-4 4-4"/><path d="M3 12h18"/><path d="M17 8l4 4-4 4"/></svg>交换双方</button>
+            <button class="top-btn hide-btn" id="bhd" onclick="th()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>隐藏计分板</button>
+          </div>
+          <div class="card">
+            <div class="score-display">
+              <div class="score-val r" id="ds1">0</div>
+              <div class="score-sep">:</div>
+              <div class="score-val b" id="ds2">0</div>
+            </div>
+          </div>
+          <div class="team-inputs">
+            <div class="team-box"><input id="iN1" placeholder="红队" maxlength="12"/><input id="iC1" placeholder="一班" maxlength="12"/></div>
+            <div class="team-box blue"><input id="iN2" placeholder="蓝队" maxlength="12"/><input id="iC2" placeholder="二班" maxlength="12"/></div>
+          </div>
+          <div class="toggle-row"><input type="checkbox" id="chkClass" checked/><label for="chkClass">显示班级</label></div>
+          <div class="card">
+            <div class="card-label">得分</div>
+            <div class="score-grid">
+              <div class="score-col red">
+                <div class="col-label" id="lbl1">红队</div>
+                <div class="score-btns">
+                  <button class="sbn plus" onclick="cs(1,1)">+1</button><button class="sbn plus" onclick="cs(1,2)">+2</button><button class="sbn plus" onclick="cs(1,3)">+3</button>
+                  <button class="sbn minus" onclick="cs(1,-1)">-1</button><button class="sbn minus" onclick="cs(1,-2)">-2</button><button class="sbn minus" onclick="cs(1,-3)">-3</button>
+                </div>
+              </div>
+              <div class="score-col blue">
+                <div class="col-label" id="lbl2">蓝队</div>
+                <div class="score-btns">
+                  <button class="sbn plus" onclick="cs(2,1)">+1</button><button class="sbn plus" onclick="cs(2,2)">+2</button><button class="sbn plus" onclick="cs(2,3)">+3</button>
+                  <button class="sbn minus" onclick="cs(2,-1)">-1</button><button class="sbn minus" onclick="cs(2,-2)">-2</button><button class="sbn minus" onclick="cs(2,-3)">-3</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">犯规</div>
+            <div class="foul-grid">
+              <div class="foul-box red">
+                <div class="foul-label" id="fl1">红队</div>
+                <div class="foul-num" id="df1">0</div>
+                <div class="foul-btns"><button class="fbt plus" onclick="cf(1,1)">+</button><button class="fbt minus" onclick="cf(1,-1)">-</button></div>
+              </div>
+              <div class="foul-box blue">
+                <div class="foul-label" id="fl2">蓝队</div>
+                <div class="foul-num" id="df2">0</div>
+                <div class="foul-btns"><button class="fbt plus" onclick="cf(2,1)">+</button><button class="fbt minus" onclick="cf(2,-1)">-</button></div>
+              </div>
+            </div>
+          </div>
+          <div class="actions"><button class="abtn red" onclick="ra()">重置</button></div>
+        </div>
+        <div class="tab" id="tab-prog">
+          <div class="main-title">节目单 <span class="badge" id="progCount">0 个节目</span></div>
+          <div class="json-status" id="jsonStatus"><div class="json-dot" id="jsonDot"></div><span id="jsonText">programs.json</span></div>
+          <div class="top-actions">
+            <button class="top-btn hide-btn" id="bProgHide" onclick="toggleSingle('programHidden',!S.programHidden)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>隐藏节目单</button>
+          </div>
+          <div class="prog-nav">
+            <button class="nav-btn" onclick="progNav(-1)">◀</button>
+            <div class="nav-info"><span class="nav-num" id="navNum">01</span><span class="nav-title" id="navTitle">加载中…</span><span class="nav-meta" id="navMeta"></span></div>
+            <button class="nav-btn" onclick="progNav(1)">▶</button>
+          </div>
+          <div class="next-preview" id="nextPreview"><div class="np-label">下一个节目</div><div class="np-title" id="npTitle">—</div><div class="np-meta" id="npMeta">—</div></div>
+          <div class="quick-grid" id="quickGrid"></div>
+          <div style="margin-bottom:10px"><button class="pab add" onclick="addProgram()">+ 添加节目</button></div>
+          <div class="prog-list" id="progList"></div>
+        </div>
+        <div class="tab" id="tab-host">
+          <div class="main-title">主持人管理 <span class="badge" id="hostCount">0 位</span></div>
+          <div class="json-status" id="hostJsonStatus"><div class="json-dot" id="hostJsonDot"></div><span id="hostJsonText">hosts.json</span></div>
+          <div class="card">
+            <div class="card-label">显示数量</div>
+            <div class="slot-count-row" id="slotCountRow">
+              <button class="slot-count-btn" onclick="setSlotCount(1)">1 位</button>
+              <button class="slot-count-btn active" onclick="setSlotCount(2)">2 位</button>
+              <button class="slot-count-btn" onclick="setSlotCount(3)">3 位</button>
+              <button class="slot-count-btn" onclick="setSlotCount(4)">4 位</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">字幕条位置</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="edit-field"><label>X 坐标（左边距）</label><input type="number" id="hostPosX" value="80" min="0" max="1920" oninput="onHostPosInput()"/></div>
+              <div class="edit-field"><label>Y 坐标（底边距）</label><input type="number" id="hostPosY" value="80" min="0" max="1080" oninput="onHostPosInput()"/></div>
+            </div>
+          </div>
+          <div class="top-actions">
+            <button class="top-btn hide-btn" id="bAllHosts" onclick="toggleAllHosts()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span id="bAllHostsText">隐藏全部</span></button>
+          </div>
+          <div class="slot-cards" id="slotCards"></div>
+          <div style="margin-bottom:10px"><button class="pab add" style="color:var(--rose);border-color:rgba(255,107,107,0.25)" onclick="addHost()">+ 添加主持人</button></div>
+          <div class="prog-list" id="hostList"></div>
+        </div>
+        <div class="tab" id="tab-logo">
+          <div class="main-title">Logo</div>
+          <div class="actions">
+            <button class="abtn orange" id="bLogo" onclick="lt()">隐藏</button>
+          </div>
+          <div class="card" style="margin-top:10px">
+            <div class="card-label">YZBTVS 位置</div>
+            <div class="slider-row">
+              <div class="slider-field">
+                <label>X 坐标</label>
+                <div class="slider-wrap">
+                  <input type="range" id="logoX" min="0" max="1800" value="80" oninput="document.getElementById('logoXVal').textContent=this.value; onLogoPosInput()"/>
+                  <span class="slider-val" id="logoXVal">80</span>
+                </div>
+              </div>
+              <div class="slider-field">
+                <label>Y 坐标</label>
+                <div class="slider-wrap">
+                  <input type="range" id="logoY" min="0" max="1000" value="20" oninput="document.getElementById('logoYVal').textContent=this.value; onLogoPosInput()"/>
+                  <span class="slider-val" id="logoYVal">20</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab" id="tab-global">
+          <div class="main-title">全局控制</div>
+          <div class="status-row">
+            <div class="status-chip"><div class="label">计分板</div><div class="val on" id="stScore">显示</div></div>
+            <div class="status-chip"><div class="label">节目单</div><div class="val on" id="stProg">显示</div></div>
+            <div class="status-chip"><div class="label">字幕条</div><div class="val on" id="stHosts">显示</div></div>
+            <div class="status-chip"><div class="label">Logo</div><div class="val on" id="stLogo">显示</div></div>
+          </div>
+          <div class="single-controls">
+            <div class="single-ctrl"><span class="ctrl-name">计分板</span><div class="ctrl-btns"><button class="ctrl-btn" id="ctrlScoreShow" onclick="toggleSingle('hidden',false)">显示</button><button class="ctrl-btn" id="ctrlScoreHide" onclick="toggleSingle('hidden',true)">隐藏</button></div></div>
+            <div class="single-ctrl"><span class="ctrl-name">节目单</span><div class="ctrl-btns"><button class="ctrl-btn" id="ctrlProgShow" onclick="toggleSingle('programHidden',false)">显示</button><button class="ctrl-btn" id="ctrlProgHide" onclick="toggleSingle('programHidden',true)">隐藏</button></div></div>
+            <div class="single-ctrl"><span class="ctrl-name">主持人字幕条</span><div class="ctrl-btns"><button class="ctrl-btn" id="ctrlHostsShow" onclick="toggleAllHostsTo(false)">显示</button><button class="ctrl-btn" id="ctrlHostsHide" onclick="toggleAllHostsTo(true)">隐藏</button></div></div>
+            <div class="single-ctrl"><span class="ctrl-name">Logo</span><div class="ctrl-btns"><button class="ctrl-btn" id="ctrlLogoShow" onclick="toggleSingle('logoHidden',false)">显示</button><button class="ctrl-btn" id="ctrlLogoHide" onclick="toggleSingle('logoHidden',true)">隐藏</button></div></div>
+          </div>
+          <div class="global-actions">
+            <button class="gbtn hide-all" onclick="hideAll()">全部隐藏</button>
+            <button class="gbtn show-all" onclick="showAll()">全部显示</button>
+            <button class="gbtn reset-all" onclick="ra()">重置全部</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      var DEFAULT_PROGRAMS = [
+        { number: "01", type: "舞蹈", title: "双生", performer: "高二2班 宋俊航、高二14班 祝婉诗", desc: "这支舞蹈演绎一场关于自我平衡与心灵觉醒的成长之旅。" },
+        { number: "02", type: "舞蹈", title: "Wonderful U", performer: "高一30班 黄心妍", desc: "以温柔且有力量的现代舞肢体表达，诠释青春路上的自我成长与破茧蜕变。" },
+        { number: "03", type: "舞蹈", title: "No Doubt", performer: "高二16班 刘宝莲等7人", desc: "整支舞蹈围绕友情主题展开。" },
+        { number: "04", type: "舞蹈", title: "La La Land", performer: "高二13班 韩诗嘉等21人", desc: "舞步浪漫灵动，旋律温柔缱绻。" },
+        { number: "05", type: "舞蹈", title: "乡愁无边", performer: "高一25班 洪欣楠", desc: "改编自余光中经典诗作《乡愁》。" },
+        { number: "06", type: "舞蹈", title: "非人哉", performer: "高二18班 汪奥雪等10人", desc: "融合国风元素与元气宅舞风格。" },
+        { number: "07", type: "舞蹈", title: "姑娘的红裙", performer: "高二31班 王雅熙", desc: "以彝族少女的成长心境与青涩情愫为主线。" },
+        { number: "08", type: "舞蹈", title: "月亮弯弯", performer: "高二8班 宾恩儿等16人", desc: "以舞蹈演绎家国情怀与少年担当。" },
+        { number: "09", type: "舞蹈", title: "藤蔓花", performer: "高二25班 杨紫怡、高二18班 冯雨薇", desc: "以傣族经典「三道弯」舞姿为核心。" },
+        { number: "10", type: "舞蹈", title: "More Jump More", performer: "高二20班 陈秀妍等5人", desc: "以跳跃律动为核心编排。" },
+        { number: "11", type: "舞蹈", title: "咏春", performer: "高二6班 袁梓妍等7人", desc: "扇影翩跹，温婉雅致。" },
+        { number: "12", type: "舞蹈", title: "迦陵频伽", performer: "高二31班 郑铭佩等4人", desc: "取材莫高窟经典壁画。" },
+        { number: "13", type: "舞蹈", title: "Maestro", performer: "高一30班 蒋丰远", desc: "以街舞强劲节奏为底色。" },
+      ];
+      var DEFAULT_HOSTS = [{ name: "主持人", title: "晚会主持人", bio: "", photo: "" }];
+      var COLOR_SCHEMES = [
+        { id: "rose", dot: "#ff6b6b" },
+        { id: "blue", dot: "#0a84ff" },
+        { id: "green", dot: "#30d158" },
+        { id: "purple", dot: "#bf5af2" },
+        { id: "teal", dot: "#64d2ff" }
+      ];
+      var connOK = false;
+      var S = {
+        team1: 0, team2: 0,
+        team1Name: "红队", team1Class: "一班",
+        team2Name: "蓝队", team2Class: "二班",
+        hidden: false,
+        showClass: true,
+        team1Fouls: 0, team2Fouls: 0,
+        programIndex: 0, programHidden: false,
+        logoHidden: false,
+        logoX: 80, logoY: 20,
+        hostSlotCount: 2, hostsAllHidden: true,
+        hostX: 80, hostY: 80,
+        hostSlots: [
+          { hostIndex: 0, hidden: false, color: "rose" },
+          { hostIndex: 1, hidden: false, color: "blue" },
+          { hostIndex: 2, hidden: false, color: "green" },
+          { hostIndex: 3, hidden: false, color: "purple" }
+        ]
+      };
+      var programs = [];
+      var hosts = [];
+      var editingProgramIndex = -1;
+      var editingHostIndex = -1;
+      
+      function applyTheme(theme) {
+        var html = document.documentElement;
+        if (theme === "light") html.classList.add("theme-light");
+        else html.classList.remove("theme-light");
+        document.getElementById("themeMoonIcon").style.display = (theme === "dark") ? "block" : "none";
+        document.getElementById("themeSunIcon").style.display = (theme === "dark") ? "none" : "block";
+      }
+      
+      function toggleTheme() {
+        var newTheme = (S.theme === "dark") ? "light" : "dark";
+        S.theme = newTheme;
+        applyTheme(newTheme);
+        pushState({ theme: newTheme });
+      }
+      
+      function setConn(ok) {
+        connOK = ok;
+        document.getElementById("connDot").classList.toggle("ok", ok);
+        document.getElementById("connText").classList.toggle("ok", ok);
+        document.getElementById("connText").textContent = ok ? "已连接" : "未连接";
+      }
+      
+      function switchTab(tab) {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".sb-item").forEach(i => i.classList.remove("active"));
+        document.getElementById("tab-" + tab).classList.add("active");
+        document.querySelector(".sb-item[data-tab='" + tab + "']").classList.add("active");
+      }
+      
+      function pushState(updates) {
+        var payload = updates || S;
+        fetch("/api/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
+          .catch(() => {});
+      }
+      
+      function applyState(data) {
+        if (!data) return;
+        for (var k in data) {
+          if (data.hasOwnProperty(k) && k !== "programs" && k !== "hosts" && k !== "presets") {
+            S[k] = data[k];
+          }
+        }
+        updateScoreDisplay();
+        updateScoreboardButton();
+        updateProgHideButton();
+        updateLogoButton();
+        updateHostAllButton();
+        updateStatusRow();
+        updateGlobalButtons();
+        updateHostPosInputs();
+        updateLogoPosInputs();
+        updateSlotCountButtons();
+        updateSlotCards();
+        renderQuickGrid();
+        renderProgList();
+        renderHostList();
+        updateProgNav();
+        updateNextPreview();
+      }
+      
+      function updateScoreDisplay() {
+        document.getElementById("ds1").textContent = S.team1;
+        document.getElementById("ds2").textContent = S.team2;
+        document.getElementById("df1").textContent = S.team1Fouls;
+        document.getElementById("df2").textContent = S.team2Fouls;
+        document.getElementById("iN1").value = S.team1Name;
+        document.getElementById("iC1").value = S.team1Class;
+        document.getElementById("iN2").value = S.team2Name;
+        document.getElementById("iC2").value = S.team2Class;
+        document.getElementById("chkClass").checked = S.showClass;
+        document.getElementById("lbl1").textContent = S.team1Name;
+        document.getElementById("lbl2").textContent = S.team2Name;
+        document.getElementById("fl1").textContent = S.team1Name;
+        document.getElementById("fl2").textContent = S.team2Name;
+      }
+      
+      function updateScoreboardButton() {
+        var btn = document.getElementById("bhd");
+        btn.innerHTML = S.hidden
+          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>显示计分板'
+          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>隐藏计分板';
+      }
+      
+      function updateProgHideButton() {
+        var btn = document.getElementById("bProgHide");
+        btn.innerHTML = S.programHidden
+          ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>显示节目单'
+          : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>隐藏节目单';
+      }
+      
+      function updateLogoButton() {
+        var btn = document.getElementById("bLogo");
+        btn.textContent = S.logoHidden ? "显示" : "隐藏";
+      }
+      
+      function updateHostAllButton() {
+        var btn = document.getElementById("bAllHosts");
+        var text = document.getElementById("bAllHostsText");
+        text.textContent = S.hostsAllHidden ? "显示全部" : "隐藏全部";
+      }
+      
+      function updateStatusRow() {
+        var statusItems = [
+          { key: "hidden", elScore: "stScore", btnShow: "ctrlScoreShow", btnHide: "ctrlScoreHide" },
+          { key: "programHidden", elScore: "stProg", btnShow: "ctrlProgShow", btnHide: "ctrlProgHide" },
+          { key: "hostsAllHidden", elScore: "stHosts", btnShow: "ctrlHostsShow", btnHide: "ctrlHostsHide" },
+          { key: "logoHidden", elScore: "stLogo", btnShow: "ctrlLogoShow", btnHide: "ctrlLogoHide" }
+        ];
+        statusItems.forEach(item => {
+          var el = document.getElementById(item.elScore);
+          var isHidden = S[item.key];
+          el.textContent = isHidden ? "隐藏" : "显示";
+          el.classList.toggle("on", !isHidden);
+          el.classList.toggle("off", isHidden);
+          document.getElementById(item.btnShow).classList.toggle("active-on", !isHidden);
+          document.getElementById(item.btnHide).classList.toggle("active-off", isHidden);
+        });
+      }
+      
+      function updateGlobalButtons() {
+      }
+      
+      function updateHostPosInputs() {
+        document.getElementById("hostPosX").value = S.hostX;
+        document.getElementById("hostPosY").value = S.hostY;
+      }
+      
+      function updateLogoPosInputs() {
+        document.getElementById("logoX").value = S.logoX;
+        document.getElementById("logoY").value = S.logoY;
+        document.getElementById("logoXVal").textContent = S.logoX;
+        document.getElementById("logoYVal").textContent = S.logoY;
+      }
+      
+      function updateSlotCountButtons() {
+        document.querySelectorAll(".slot-count-btn").forEach((btn, idx) => {
+          btn.classList.toggle("active", idx + 1 === S.hostSlotCount);
+        });
+      }
+      
+      function updateSlotCards() {
+        var container = document.getElementById("slotCards");
+        container.innerHTML = "";
+        for (var i = 0; i < 4; i++) {
+          var slot = S.hostSlots[i];
+          var host = hosts[slot.hostIndex] || { name: "未设置", title: "" };
+          var isActive = i < S.hostSlotCount;
+          var card = document.createElement("div");
+          card.className = "slot-card" + (slot.color ? " c-" + slot.color : " c-rose") + (!isActive ? " inactive-slot" : "");
+          var html = '<div class="slot-card-head">';
+          html += '<div class="slot-dot" style="background:' + (COLOR_SCHEMES.find(c => c.id === slot.color) || COLOR_SCHEMES[0]).dot + '"></div>';
+          html += '<div class="slot-card-title">字幕条 ' + (i + 1) + '</div>';
+          html += '<button class="slot-hide-btn ' + (slot.hidden ? "off" : "on") + '" onclick="toggleSlotHide(' + i + ')">' + (slot.hidden ? "已隐藏" : "显示中") + '</button>';
+          html += '</div>';
+          html += '<div class="slot-nav">';
+          html += '<button class="nav-btn" onclick="slotHostNav(' + i + ',-1)">◀</button>';
+          html += '<div class="nav-info"><span class="nav-num">' + (slot.hostIndex + 1) + '</span><span class="nav-title">' + host.name + '</span><span class="nav-meta">' + host.title + '</span></div>';
+          html += '<button class="nav-btn" onclick="slotHostNav(' + i + ',1)">▶</button>';
+          html += '</div>';
+          html += '<div class="slot-grid">';
+          hosts.forEach((h, idx) => {
+            html += '<div class="quick-cell' + (idx === slot.hostIndex ? " current" : "") + '" onclick="selectSlotHost(' + i + ',' + idx + ')">';
+            html += '<div class="qc-num">' + (idx + 1) + '</div>';
+            html += '<div class="qc-title">' + h.name + '</div>';
+            html += '</div>';
+          });
+          html += '</div>';
+          html += '<div class="slot-colors">';
+          COLOR_SCHEMES.forEach(c => {
+            html += '<div class="slot-color-btn c-' + c.id + (slot.color === c.id ? " selected" : "") + '" onclick="setSlotColor(' + i + ",'" + c.id + "')\"></div>";
+          });
+          html += '</div>';
+          card.innerHTML = html;
+          container.appendChild(card);
+        }
+      }
+      
+      function toggleSlotHide(i) {
+        S.hostSlots[i].hidden = !S.hostSlots[i].hidden;
+        updateSlotCards();
+        pushState({ hostSlots: S.hostSlots });
+      }
+      
+      function slotHostNav(i, dir) {
+        var newIdx = S.hostSlots[i].hostIndex + dir;
+        if (newIdx < 0 || newIdx >= hosts.length) return;
+        S.hostSlots[i].hostIndex = newIdx;
+        updateSlotCards();
+        pushState({ hostSlots: S.hostSlots });
+      }
+      
+      function selectSlotHost(slotIdx, hostIdx) {
+        S.hostSlots[slotIdx].hostIndex = hostIdx;
+        updateSlotCards();
+        pushState({ hostSlots: S.hostSlots });
+      }
+      
+      function setSlotColor(i, color) {
+        S.hostSlots[i].color = color;
+        updateSlotCards();
+        pushState({ hostSlots: S.hostSlots });
+      }
+      
+      function cs(team, delta) {
+        var target = "team" + team;
+        S[target] = Math.max(0, S[target] + delta);
+        document.getElementById("ds" + team).classList.add("bump");
+        setTimeout(function() { document.getElementById("ds" + team).classList.remove("bump"); }, 300);
+        pushState({ team1: S.team1, team2: S.team2 });
+      }
+      
+      function cf(team, delta) {
+        var target = "team" + team + "Fouls";
+        S[target] = Math.max(0, S[target] + delta);
+        pushState({ team1Fouls: S.team1Fouls, team2Fouls: S.team2Fouls });
+      }
+      
+      function ra() {
+        S.team1 = 0; S.team2 = 0;
+        S.team1Fouls = 0; S.team2Fouls = 0;
+        S.team1Name = "红队"; S.team1Class = "一班";
+        S.team2Name = "蓝队"; S.team2Class = "二班";
+        S.showClass = true;
+        updateScoreDisplay();
+        pushState({ team1:0, team2:0, team1Fouls:0, team2Fouls:0, team1Name:S.team1Name, team2Name:S.team2Name, team1Class:S.team1Class, team2Class:S.team2Class, showClass:true });
+      }
+      
+      function swp() {
+        var tScore = S.team1; S.team1 = S.team2; S.team2 = tScore;
+        var tName = S.team1Name; S.team1Name = S.team2Name; S.team2Name = tName;
+        var tClass = S.team1Class; S.team1Class = S.team2Class; S.team2Class = tClass;
+        var tFouls = S.team1Fouls; S.team1Fouls = S.team2Fouls; S.team2Fouls = tFouls;
+        updateScoreDisplay();
+        pushState({ team1:S.team1, team2:S.team2, team1Name:S.team1Name, team2Name:S.team2Name, team1Class:S.team1Class, team2Class:S.team2Class, team1Fouls:S.team1Fouls, team2Fouls:S.team2Fouls });
+      }
+      
+      function th() { toggleSingle("hidden", !S.hidden); }
+      function lt() { toggleSingle("logoHidden", !S.logoHidden); }
+      
+      function toggleSingle(key, value) {
+        S[key] = value;
+        pushState({ [key]: value });
+      }
+      
+      function toggleAllHosts() {
+        S.hostsAllHidden = !S.hostsAllHidden;
+        pushState({ hostsAllHidden: S.hostsAllHidden });
+      }
+      
+      function toggleAllHostsTo(v) {
+        S.hostsAllHidden = v;
+        pushState({ hostsAllHidden: v });
+      }
+      
+      function hideAll() {
+        S.hidden = true; S.programHidden = true; S.logoHidden = true; S.hostsAllHidden = true;
+        pushState({ hidden:true, programHidden:true, logoHidden:true, hostsAllHidden:true });
+      }
+      
+      function showAll() {
+        S.hidden = false; S.programHidden = false; S.logoHidden = false; S.hostsAllHidden = false;
+        pushState({ hidden:false, programHidden:false, logoHidden:false, hostsAllHidden:false });
+      }
+      
+      function progNav(delta) {
+        var newIdx = S.programIndex + delta;
+        if (newIdx <0 || newIdx >= programs.length) return;
+        S.programIndex = newIdx;
+        updateProgNav();
+        updateNextPreview();
+        renderQuickGrid();
+        pushState({ programIndex: newIdx });
+      }
+      
+      function goToProg(idx) {
+        if (idx <0 || idx >= programs.length) return;
+        S.programIndex = idx;
+        updateProgNav();
+        updateNextPreview();
+        renderQuickGrid();
+        pushState({ programIndex: idx });
+      }
+      
+      function updateProgNav() {
+        var p = programs[S.programIndex];
+        if (p) {
+          document.getElementById("navNum").textContent = p.number || (S.programIndex + 1);
+          document.getElementById("navTitle").textContent = p.title;
+          document.getElementById("navMeta").textContent = (p.type || "") + " · " + (p.performer || "");
+        }
+      }
+      
+      function updateNextPreview() {
+        var nextIdx = S.programIndex +1;
+        var p = (nextIdx < programs.length) ? programs[nextIdx] : null;
+        var prev = document.getElementById("nextPreview");
+        if (p) {
+          prev.classList.remove("empty");
+          document.getElementById("npTitle").textContent = p.title;
+          document.getElementById("npMeta").textContent = (p.number ? (p.number + " · ") : "") + (p.type || "") + " · " + (p.performer || "");
+        } else {
+          prev.classList.add("empty");
+          document.getElementById("npTitle").textContent = "没有下一个节目了";
+          document.getElementById("npMeta").textContent = "已到达最后一个节目";
+        }
+      }
+      
+      function renderQuickGrid() {
+        var container = document.getElementById("quickGrid");
+        container.innerHTML = "";
+        programs.forEach((p, idx) => {
+          var cell = document.createElement("div");
+          cell.className = "quick-cell" + (idx === S.programIndex ? " current" : "");
+          cell.onclick = function() { goToProg(idx); };
+          cell.innerHTML = '<div class="qc-num">' + (p.number || (idx + 1)) + '</div>' +
+            '<div class="qc-title">' + p.title + '</div>' +
+            (p.type ? '<div class="qc-type">' + p.type + '</div>' : '');
+          container.appendChild(cell);
+        });
+        document.getElementById("progCount").textContent = programs.length + " 个节目";
+      }
+      
+      function renderProgList() {
+        var container = document.getElementById("progList");
+        container.innerHTML = "";
+        programs.forEach((p, idx) => {
+          var card = document.createElement("div");
+          card.className = "prog-card" + (idx === S.programIndex ? " current-card" : "") + (editingProgramIndex === idx ? " editing" : "");
+          var html = '<div class="prog-head"><div class="prog-num">' + (p.number || (idx + 1)) + '</div>' +
+            (p.type ? '<div class="prog-type-badge">' + p.type + '</div>' : '') + '</div>' +
+            '<div class="prog-title">' + p.title + '</div>' +
+            (p.performer ? '<div class="prog-meta"><span>演出：</span>' + p.performer + '</div>' : '') +
+            (p.desc ? '<div class="prog-desc">' + p.desc + '</div>' : '');
+          if (editingProgramIndex === idx) {
+            html += '<div class="edit-wrap open"><div class="edit-inner"><div class="edit-fields">' +
+              '<div class="edit-row"><div class="edit-field"><label>序号</label><input id="eNum' + idx + '" value="' + (p.number || '') + '"></div>' +
+              '<div class="edit-field"><label>类型</label><input id="eType' + idx + '" value="' + (p.type || '') + '"></div></div>' +
+              '<div class="edit-field full"><label>标题</label><input id="eTitle' + idx + '" value="' + (p.title || '') + '"></div>' +
+              '<div class="edit-field full"><label>演出者</label><input id="ePerf' + idx + '" value="' + (p.performer || '') + '"></div>' +
+              '<div class="edit-field full"><label>描述</label><textarea id="eDesc' + idx + '" rows="3">' + (p.desc || '') + '</textarea></div>' +
+              '</div></div></div>';
+            html += '<div class="prog-actions"><button class="pab save" onclick="saveProgram(' + idx + ')">保存</button>' +
+              '<button class="pab cancel" onclick="cancelEditProgram()">取消</button></div>';
+          } else {
+            html += '<div class="prog-actions"><button class="pab edit" onclick="editProgram(' + idx + ')">编辑</button>' +
+              (idx === S.programIndex ? '<button class="pab save" onclick="goToProg(' + idx + ')">当前节目</button>' : '') +
+              '<button class="pab del" onclick="deleteProgram(' + idx + ')">删除</button></div>';
+          }
+          card.innerHTML = html;
+          container.appendChild(card);
+        });
+      }
+      
+      function addProgram() {
+        programs.push({ number: "", type: "舞蹈", title: "新节目", performer: "", desc: "" });
+        editingProgramIndex = programs.length -1;
+        renderProgList();
+        savePrograms();
+      }
+      
+      function editProgram(idx) {
+        editingProgramIndex = idx;
+        renderProgList();
+      }
+      
+      function cancelEditProgram() {
+        editingProgramIndex = -1;
+        renderProgList();
+      }
+      
+      function saveProgram(idx) {
+        programs[idx].number = document.getElementById("eNum" + idx).value;
+        programs[idx].type = document.getElementById("eType" + idx).value;
+        programs[idx].title = document.getElementById("eTitle" + idx).value;
+        programs[idx].performer = document.getElementById("ePerf" + idx).value;
+        programs[idx].desc = document.getElementById("eDesc" + idx).value;
+        editingProgramIndex = -1;
+        renderProgList();
+        renderQuickGrid();
+        updateProgNav();
+        updateNextPreview();
+        savePrograms();
+      }
+      
+      function deleteProgram(idx) {
+        if (!confirm("确定要删除这个节目吗？")) return;
+        programs.splice(idx, 1);
+        if (S.programIndex >= programs.length) S.programIndex = Math.max(0, programs.length - 1);
+        renderProgList();
+        renderQuickGrid();
+        updateProgNav();
+        updateNextPreview();
+        savePrograms();
+      }
+      
+      function savePrograms() {
+        fetch("/programs.json", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(programs)
+        }).then(function(r) {
+          if (r.ok) setJsonStatus(true, "jsonStatus");
+          else throw "";
+        }).catch(function() { setJsonStatus(false, "jsonStatus"); });
+      }
+      
+      function renderHostList() {
+        var container = document.getElementById("hostList");
+        container.innerHTML = "";
+        hosts.forEach((h, idx) => {
+          var card = document.createElement("div");
+          card.className = "prog-card" + (editingHostIndex === idx ? " editing" : "");
+          var html = '<div class="prog-head"><div class="prog-num">' + (idx + 1) + '</div></div>' +
+            '<div class="prog-title">' + h.name + '</div>' +
+            (h.title ? '<div class="prog-meta"><span>身份：</span>' + h.title + '</div>' : '') +
+            (h.bio ? '<div class="prog-desc">' + h.bio + '</div>' : '');
+          if (editingHostIndex === idx) {
+            html += '<div class="edit-wrap open"><div class="edit-inner"><div class="edit-fields">' +
+              '<div class="edit-field full"><label>姓名</label><input id="hName' + idx + '" value="' + (h.name || '') + '"></div>' +
+              '<div class="edit-field full"><label>身份/头衔</label><input id="hTitle' + idx + '" value="' + (h.title || '') + '"></div>' +
+              '<div class="edit-field full"><label>简介</label><textarea id="hBio' + idx + '" rows="2">' + (h.bio || '') + '</textarea></div>' +
+              '</div></div></div>';
+            html += '<div class="prog-actions"><button class="pab save" onclick="saveHost(' + idx + ')">保存</button>' +
+              '<button class="pab cancel" onclick="cancelEditHost()">取消</button></div>';
+          } else {
+            html += '<div class="prog-actions"><button class="pab edit" onclick="editHost(' + idx + ')">编辑</button>' +
+              '<button class="pab del" onclick="deleteHost(' + idx + ')">删除</button></div>';
+          }
+          card.innerHTML = html;
+          container.appendChild(card);
+        });
+        document.getElementById("hostCount").textContent = hosts.length + " 位";
+      }
+      
+      function addHost() {
+        hosts.push({ name: "新主持人", title: "", bio: "" });
+        editingHostIndex = hosts.length - 1;
+        renderHostList();
+        updateSlotCards();
+        saveHosts();
+      }
+      
+      function editHost(idx) { editingHostIndex = idx; renderHostList(); }
+      function cancelEditHost() { editingHostIndex = -1; renderHostList(); }
+      
+      function saveHost(idx) {
+        hosts[idx].name = document.getElementById("hName" + idx).value;
+        hosts[idx].title = document.getElementById("hTitle" + idx).value;
+        hosts[idx].bio = document.getElementById("hBio" + idx).value;
+        editingHostIndex = -1;
+        renderHostList();
+        updateSlotCards();
+        saveHosts();
+      }
+      
+      function deleteHost(idx) {
+        if (!confirm("确定要删除这位主持人吗？")) return;
+        hosts.splice(idx, 1);
+        for (var i =0; i<4; i++) {
+          if (S.hostSlots[i].hostIndex >= idx) S.hostSlots[i].hostIndex = Math.max(0, S.hostSlots[i].hostIndex -1);
+        }
+        renderHostList();
+        updateSlotCards();
+        saveHosts();
+      }
+      
+      function saveHosts() {
+        fetch("/hosts.json", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(hosts)
+        }).then(function(r) {
+          if (r.ok) setJsonStatus(true, "hostJsonStatus");
+          else throw "";
+        }).catch(function() { setJsonStatus(false, "hostJsonStatus"); });
+      }
+      
+      function setJsonStatus(ok, id) {
+        var dot = document.querySelector("#" + id + " .json-dot");
+        if (dot) { dot.classList.toggle("err", !ok); dot.style.background = ok ? "#30d158" : "#ff453a"; }
+      }
+      
+      function onHostPosInput() {
+        var x = parseInt(document.getElementById("hostPosX").value) || 80;
+        var y = parseInt(document.getElementById("hostPosY").value) || 80;
+        S.hostX = x; S.hostY = y;
+        pushState({ hostX: x, hostY: y });
+      }
+      
+      function onLogoPosInput() {
+        var x = parseInt(document.getElementById("logoX").value) || 80;
+        var y = parseInt(document.getElementById("logoY").value) || 20;
+        S.logoX = x; S.logoY = y;
+        document.getElementById("logoXVal").textContent = x;
+        document.getElementById("logoYVal").textContent = y;
+        pushState({ logoX: x, logoY: y });
+      }
+      
+      function setSlotCount(n) {
+        S.hostSlotCount = n;
+        updateSlotCountButtons();
+        updateSlotCards();
+        pushState({ hostSlotCount: n });
+      }
+      
+      document.getElementById("iN1").addEventListener("input", function() { S.team1Name = this.value; pushState({ team1Name: this.value }); updateScoreDisplay(); });
+      document.getElementById("iC1").addEventListener("input", function() { S.team1Class = this.value; pushState({ team1Class: this.value }); updateScoreDisplay(); });
+      document.getElementById("iN2").addEventListener("input", function() { S.team2Name = this.value; pushState({ team2Name: this.value }); updateScoreDisplay(); });
+      document.getElementById("iC2").addEventListener("input", function() { S.team2Class = this.value; pushState({ team2Class: this.value }); updateScoreDisplay(); });
+      document.getElementById("chkClass").addEventListener("change", function() { S.showClass = this.checked; pushState({ showClass: this.checked }); updateScoreDisplay(); });
+      
+      function loadAll() {
+        fetch("/programs.json").then(r => { if (!r.ok) throw ""; return r.json(); }).then(d => { if (d && d.length) programs = d; else programs = DEFAULT_PROGRAMS; renderQuickGrid(); renderProgList(); updateProgNav(); updateNextPreview(); }).catch(() => { programs = DEFAULT_PROGRAMS; renderQuickGrid(); renderProgList(); updateProgNav(); updateNextPreview(); });
+        fetch("/hosts.json").then(r => { if (!r.ok) throw ""; return r.json(); }).then(d => { if (d && d.length) hosts = d; else hosts = DEFAULT_HOSTS; renderHostList(); updateSlotCards(); }).catch(() => { hosts = DEFAULT_HOSTS; renderHostList(); updateSlotCards(); });
+        fetch("/api/state").then(r => r.json()).then(d => { if (d.theme) { S.theme = d.theme; applyTheme(d.theme); } if (d.programs && d.programs.length) programs = d.programs; if (d.hosts && d.hosts.length) hosts = d.hosts; applyState(d); setConn(true); }).catch(() => { setConn(false); setInterval(poll, 1500); });
+      }
+      
+      function poll() {
+        fetch("/api/state").then(r => r.json()).then(d => { applyState(d); setConn(true); }).catch(() => setConn(false));
+      }
+      
+      function applySSE(data) {
+        if (data && data.v !== undefined) {
+          fetch("/api/lite-state").then(r => r.json()).then(d => { applyState(d); });
+        }
+      }
+      
+      window.onload = function() {
+        loadAll();
+        try {
+          var evtSrc = new EventSource("/api/events");
+          evtSrc.onmessage = function(e) { try { applySSE(JSON.parse(e.data)); } catch(ex) {} };
+          evtSrc.onerror = function() { evtSrc.close(); setInterval(poll, 1500); };
+        } catch (e) { setInterval(poll, 1500); }
+      };
+    </script>
+  </body>
+</html>

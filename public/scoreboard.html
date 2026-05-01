@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>比赛计分板</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{background:transparent;min-height:100vh;overflow:hidden}
+        .scoreboard{
+            position:fixed;bottom:20px;left:50%;
+            transform:translateX(-50%) translateY(30px);
+            width:auto;max-width:600px;min-width:320px;
+            background:rgba(255,255,255,0.96);border-radius:22px;
+            box-shadow:0 -5px 30px rgba(0,0,0,0.1);
+            display:flex;align-items:center;
+            padding:12px 30px 18px;gap:20px;
+            overflow:hidden;opacity:0;
+            transition:opacity 0.6s ease,transform 0.6s ease;z-index:100;
+            font-family:'Segoe UI','Microsoft YaHei',sans-serif;
+        }
+        .scoreboard.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+        .scoreboard.toggle-hidden{opacity:0;transform:translateX(-50%) translateY(20px);pointer-events:none}
+        .decoration-left{position:absolute;width:130px;height:130px;background:#772B2C;border-radius:50%;opacity:0.07;top:-65px;left:-25px}
+        .school-logo{position:absolute;right:-10px;bottom:-50px;height:140px;width:auto;opacity:0.12;pointer-events:none;object-fit:contain}
+        .team-info{text-align:center;min-width:80px}
+        .team-name{font-size:19px;font-weight:700;letter-spacing:1px;line-height:1.2}
+        .team-info.left .team-name{color:#772B2C}
+        .team-info.right .team-name{color:#2980b9}
+        .team-class{font-size:11px;color:#999;margin-top:2px}
+        .team-fouls{font-size:10px;color:#e67e22;font-weight:600;margin-top:2px}
+        .score-num{font-size:56px;font-weight:800;color:#2c3e50;line-height:1;min-width:60px;text-align:center;transition:all 0.4s cubic-bezier(0.68,-0.55,0.27,1.55)}
+        .score-sep{font-size:40px;color:#ccc;font-weight:300;line-height:1}
+        @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+        .pulse{animation:pulse 0.3s ease}
+        @media(max-width:560px){
+            .scoreboard{min-width:0;width:calc(100vw - 16px);padding:10px 12px 14px;gap:6px;flex-wrap:wrap;justify-content:center}
+            .team-name{font-size:18px;font-weight:800}.team-class{font-size:12px}
+            .score-num{font-size:52px;min-width:50px;font-weight:900}.score-sep{font-size:36px}
+            .team-info{min-width:50px}
+        }
+    </style>
+</head>
+<body>
+    <div class="scoreboard" id="scoreboard">
+        <div class="decoration-left"></div>
+        <img class="school-logo" src="res/logo.png" alt="校徽" onerror="this.style.display='none'">
+        <div class="team-info left">
+            <div class="team-name" id="team1Name">红队</div>
+            <div class="team-class" id="team1Class">一班</div>
+            <div class="team-fouls" id="team1Fouls"></div>
+        </div>
+        <div class="score-num" id="score1">0</div>
+        <div class="score-sep">:</div>
+        <div class="score-num" id="score2">0</div>
+        <div class="team-info right">
+            <div class="team-name" id="team2Name">蓝队</div>
+            <div class="team-class" id="team2Class">二班</div>
+            <div class="team-fouls" id="team2Fouls"></div>
+        </div>
+    </div>
+<script>
+var S={team1:0,team2:0,hidden:false,team1Name:'红队',team1Class:'一班',team2Name:'蓝队',team2Class:'二班',team1Fouls:0,team2Fouls:0,showClass:true};
+var board=document.getElementById('scoreboard');
+
+function applyState(d) {
+    var el;
+    if (d.team1 !== undefined && d.team1 !== S.team1) {
+        el=document.getElementById('score1');
+        el.textContent=d.team1;
+        el.classList.add('pulse');
+        setTimeout(function(){el.classList.remove('pulse')},300);
+        S.team1=d.team1;
+    }
+    if (d.team2 !== undefined && d.team2 !== S.team2) {
+        el=document.getElementById('score2');
+        el.textContent=d.team2;
+        el.classList.add('pulse');
+        setTimeout(function(){el.classList.remove('pulse')},300);
+        S.team2=d.team2;
+    }
+    if (d.team1Name !== undefined) {
+        document.getElementById('team1Name').textContent=d.team1Name||'红队';
+        S.team1Name=d.team1Name;
+    }
+    if (d.team2Name !== undefined) {
+        document.getElementById('team2Name').textContent=d.team2Name||'蓝队';
+        S.team2Name=d.team2Name;
+    }
+    if (d.showClass !== undefined) {
+        var tc1=document.getElementById('team1Class'),tc2=document.getElementById('team2Class');
+        if(d.showClass){tc1.style.display='';tc2.style.display='';tc1.textContent=d.team1Class||'一班';tc2.textContent=d.team2Class||'二班'}
+        else{tc1.style.display='none';tc2.style.display='none'}
+        S.showClass=d.showClass;
+    }
+    if (d.team1Class !== undefined) {
+        if (S.showClass) document.getElementById('team1Class').textContent=d.team1Class||'一班';
+        S.team1Class=d.team1Class;
+    }
+    if (d.team2Class !== undefined) {
+        if (S.showClass) document.getElementById('team2Class').textContent=d.team2Class||'二班';
+        S.team2Class=d.team2Class;
+    }
+    if (d.team1Fouls !== undefined) {
+        document.getElementById('team1Fouls').textContent=(d.team1Fouls||0)>0?'犯规 '+(d.team1Fouls||0):'';
+        S.team1Fouls=d.team1Fouls;
+    }
+    if (d.team2Fouls !== undefined) {
+        document.getElementById('team2Fouls').textContent=(d.team2Fouls||0)>0?'犯规 '+(d.team2Fouls||0):'';
+        S.team2Fouls=d.team2Fouls;
+    }
+    if (d.hidden !== undefined && d.hidden !== S.hidden) {
+        if(d.hidden) board.classList.add('toggle-hidden');
+        else board.classList.remove('toggle-hidden');
+        S.hidden=d.hidden;
+    }
+}
+
+function pull() {
+    fetch('/api/lite-state').then(function(r){return r.json()}).then(function(d){
+        applyState(d);
+    }).catch(function(){})
+}
+
+function init() {
+    pull();
+    setTimeout(function(){board.classList.add('visible')},100);
+    
+    var evtSrc = new EventSource("/api/events");
+    evtSrc.onmessage = function(e) {
+        try {
+            var d = JSON.parse(e.data);
+            applyState(d);
+        } catch(ex) {}
+    };
+    evtSrc.onerror = function() {
+        evtSrc.close();
+        setInterval(pull, 2000);
+    };
+}
+
+window.onload = init;
+</script>
+</body>
+</html>

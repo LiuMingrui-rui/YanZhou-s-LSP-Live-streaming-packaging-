@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>节目单</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;900&family=Noto+Serif+SC:wght@600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --red-main: #772b2c;
+        --red-bright: #a03a3b;
+        --red-light: #c45050;
+        --gold: #c9a84c;
+        --white: #ffffff;
+        --dark: #2c2c2e;
+        --dark-70: rgba(44, 44, 46, 0.72);
+        --dark-50: rgba(44, 44, 46, 0.55);
+        --dark-30: rgba(44, 44, 46, 0.3);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: transparent;
+        font-family: "Noto Sans SC", sans-serif;
+        overflow: hidden;
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+      }
+      .float-panel {
+        position: absolute;
+        left: 78px;
+        top: 65%;
+        transform: translateY(-50%) scale(1.5);
+        transform-origin: left center;
+        width: 320px;
+        max-width: calc((1920px - 78px - 40px) / 1.5);
+        max-height: calc((1080px - 40px) / 1.5);
+        z-index: 10;
+      }
+      .deco-wide {
+        position: absolute;
+        left: -18px; top: 0;
+        width: 4px; height: 56px;
+        background: var(--red-main);
+        border-radius: 2px;
+        pointer-events: none;
+        opacity: 0.6;
+        animation: pulseWide 4s ease-in-out infinite;
+        transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1), left 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+        transition-delay: 0.2s;
+      }
+      .deco-thin {
+        position: absolute;
+        left: -28px; top: 0;
+        width: 2px; height: 56px;
+        background: var(--gold);
+        border-radius: 1px;
+        pointer-events: none;
+        opacity: 0.45;
+        animation: pulseThin 5s ease-in-out infinite;
+        transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1), left 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+        transition-delay: 0.24s;
+      }
+      @keyframes pulseWide {
+        0%, 100% { opacity: 0.6; transform: scaleY(1); }
+        50% { opacity: 0.9; transform: scaleY(1.06); }
+      }
+      @keyframes pulseThin {
+        0%, 100% { opacity: 0.45; transform: scaleY(1); }
+        50% { opacity: 0.7; transform: scaleY(1.08); }
+      }
+      body.hidden .deco-wide { opacity: 0; left: -36px; transition-delay: 0s; animation: none; }
+      body.hidden .deco-thin { opacity: 0; left: -44px; transition-delay: 0.03s; animation: none; }
+
+      .title-bar {
+        position: relative;
+        height: 56px;
+        margin-bottom: -1px;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        background: var(--red-main);
+        border-radius: 8px 8px 0 0;
+        overflow: hidden;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        transition-delay: 0s;
+      }
+      .title-bar::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 45%;
+        background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent);
+        pointer-events: none;
+      }
+      .title-label {
+        font-size: 10px;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        line-height: 1.3;
+        margin-bottom: 1px;
+      }
+      .title-name {
+        font-family: "Noto Serif SC", serif;
+        font-size: 24px;
+        font-weight: 900;
+        color: var(--white);
+        letter-spacing: 0.04em;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: opacity 0.06s ease, transform 0.06s ease, font-size 0.25s ease;
+      }
+      body.hidden .title-bar { opacity: 0; transform: translateX(-15px); }
+
+      .info-card {
+        position: relative;
+        background: var(--white);
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+        padding: 22px 24px 24px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+        overflow-x: hidden;
+        overflow-y: auto;
+        max-height: calc((1080px - 40px) / 1.5 - 80px);
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), height 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        transition-delay: 0.03s;
+      }
+      .info-card::-webkit-scrollbar { display: none; }
+      .info-card::after {
+        content: "";
+        position: absolute;
+        top: 16px; bottom: 16px; left: 0;
+        width: 3px;
+        background: linear-gradient(180deg, var(--red-main), rgba(119,43,44,0.2), transparent);
+        border-radius: 0 2px 2px 0;
+        pointer-events: none;
+      }
+      body.hidden .info-card { opacity: 0; transform: translateX(-15px); }
+
+      .card-logo {
+        position: absolute;
+        bottom: -30px; right: -40px;
+        width: 180px; height: 180px;
+        opacity: 0.2;
+        object-fit: contain;
+        z-index: 0;
+        pointer-events: none;
+        filter: brightness(0.4) saturate(0.3);
+      }
+      .card-number {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--red-main);
+        letter-spacing: 0.25em;
+        margin-bottom: 10px;
+        opacity: 0.7;
+        position: relative; z-index: 1;
+      }
+      .card-type {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.15em;
+        color: var(--red-main);
+        background: rgba(119, 43, 44, 0.06);
+        border: 1px solid rgba(119, 43, 44, 0.15);
+        padding: 3px 12px;
+        border-radius: 10px;
+        margin-bottom: 14px;
+        position: relative; z-index: 1;
+      }
+      .card-performer {
+        margin-bottom: 14px;
+        padding: 8px 10px;
+        background: rgba(119, 43, 44, 0.025);
+        border-radius: 6px;
+        border-left: 2px solid rgba(119, 43, 44, 0.15);
+        position: relative; z-index: 1;
+      }
+      .perf-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--red-main);
+        letter-spacing: 0.2em;
+        margin-bottom: 4px;
+        opacity: 0.55;
+      }
+      .perf-grid {
+        display: grid;
+        gap: 0 10px;
+      }
+      .perf-col {
+        display: flex;
+        flex-direction: column;
+      }
+      .perf-name-item {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--dark-70);
+        line-height: 1.9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .divider {
+        width: 24px; height: 1px;
+        background: linear-gradient(90deg, rgba(119,43,44,0.25), transparent);
+        margin-bottom: 12px;
+        position: relative; z-index: 1;
+      }
+      .card-desc {
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.9;
+        color: var(--dark-50);
+        letter-spacing: 0.02em;
+        text-align: left;
+        overflow-wrap: break-word;
+        position: relative; z-index: 1;
+      }
+      .card-cover {
+        width: 100%; height: 100px;
+        border-radius: 6px;
+        margin-bottom: 14px;
+        overflow: hidden;
+        position: relative; z-index: 1;
+      }
+      .card-cover img {
+        width: 100%; height: 100%;
+        object-fit: cover;
+        opacity: 0.85;
+        transition: opacity 0.3s ease;
+      }
+      .card-cover img:hover { opacity: 1; }
+      .card-cover::after {
+        content: "";
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 40%;
+        background: linear-gradient(transparent, rgba(255,255,255,0.6));
+        pointer-events: none;
+      }
+      .progress-bar {
+        margin-top: 8px;
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--red-main), rgba(119,43,44,0.25));
+        border-radius: 2px;
+        transition: width 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+      }
+      .page-hint {
+        margin-top: 6px;
+        text-align: right;
+        font-size: 9px;
+        font-weight: 600;
+        color: var(--dark-30);
+        letter-spacing: 0.2em;
+        transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      body.hidden .progress-bar, body.hidden .page-hint { opacity: 0; transition-delay: 0.03s; }
+      .card-slice {
+        transition: opacity 0.06s ease, transform 0.06s ease;
+        position: relative; z-index: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="float-panel" id="floatPanel">
+      <div class="deco-wide"></div>
+      <div class="deco-thin"></div>
+      <div class="title-bar" id="titleBar">
+        <div>
+          <div class="title-label">节目名称</div>
+          <div class="title-name" id="titleName">加载中…</div>
+        </div>
+      </div>
+      <div class="info-card" id="infoCard">
+        <img class="card-logo" src="res/logo.png" alt="" onerror="this.style.display='none'" />
+        <div class="card-slice" id="cardSlice"></div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="page-hint" id="pageHint"></div>
+    </div>
+
+    <script>
+      var programs = [];
+      var cur = 0, hidden = false, busy = false, _lastPI = 0, _lastPH = false;
+
+      var cardSlice = document.getElementById("cardSlice");
+      var titleName = document.getElementById("titleName");
+      var titleBar = document.getElementById("titleBar");
+      var infoCard = document.getElementById("infoCard");
+      var panel = document.getElementById("floatPanel");
+      var progress = document.getElementById("progressFill");
+      var pageHint = document.getElementById("pageHint");
+
+      var MIN_W = 320;
+      var MAX_W = Math.floor((1920 - 78 - 40) / 1.5);
+      var MAX_H = Math.floor((1080 - 40) / 1.5 - 80);
+      var STEP = 10;
+
+      function restoreTransitions() {
+        infoCard.style.transition = "";
+        titleBar.style.transition = "";
+      }
+
+      function fixPunctuation(text) {
+        if (!text) return "";
+        return text.replace(/([，。、；：！？）》」』】])/g, "\u2060$1");
+      }
+
+      function fitTitleSize(title) {
+        var len = title ? title.length : 0;
+        if (len <= 6) return "24px";
+        if (len <= 9) return "21px";
+        if (len <= 12) return "18px";
+        if (len <= 16) return "15px";
+        return "13px";
+      }
+
+      /* ═══ 表演者多列对称渲染 ═══ */
+      function buildPerformerHTML(performer) {
+        if (!performer) return "";
+        var names = performer.split("、").map(function(n) { return n.trim(); }).filter(Boolean);
+        if (names.length === 0) return "";
+        var cols = names.length > 12 ? 3 : 2;
+        var perCol = Math.ceil(names.length / cols);
+        var html = '<div class="card-performer"><span class="perf-label">表演者</span><div class="perf-grid" style="grid-template-columns:repeat(' + cols + ',1fr)">';
+        for (var c = 0; c < cols; c++) {
+          html += '<div class="perf-col">';
+          var start = c * perCol;
+          var end = Math.min(start + perCol, names.length);
+          for (var i = start; i < end; i++) {
+            html += '<div class="perf-name-item">' + fixPunctuation(names[i]) + '</div>';
+          }
+          html += '</div>';
+        }
+        html += '</div></div>';
+        return html;
+      }
+
+      function buildHTML(i) {
+        if (i < 0 || i >= programs.length)
+          return '<div style="color:rgba(44,44,46,0.4);font-size:13px;font-weight:500">暂无节目</div>';
+        var p = programs[i];
+        var ch = p.cover
+          ? '<div class="card-cover"><img src="' + p.cover + '" alt="' + p.title + '" onerror="this.parentElement.style.display=\'none\'"></div>'
+          : "";
+        var perf = buildPerformerHTML(p.performer);
+        var numHTML = p.number
+          ? '<div class="card-number">第 ' + p.number + ' 个节目</div>'
+          : "";
+        return ch + numHTML + '<div class="card-type">' + p.type + '</div>' + perf + '<div class="divider"></div>' + '<div class="card-desc">' + fixPunctuation(p.desc) + '</div>';
+      }
+
+      function updateTitle(i) {
+        if (i >= 0 && i < programs.length) {
+          titleName.textContent = programs[i].title;
+          titleName.style.fontSize = fitTitleSize(programs[i].title);
+        } else {
+          titleName.textContent = "暂无节目";
+          titleName.style.fontSize = "24px";
+        }
+      }
+
+      function updateBar() {
+        if (programs.length === 0) {
+          progress.style.width = "0%";
+          pageHint.textContent = "0 / 0";
+          return;
+        }
+        progress.style.width = ((cur + 1) / programs.length) * 100 + "%";
+        pageHint.textContent = (cur + 1) + " / " + programs.length;
+      }
+
+      function measureContentDimensions() {
+        panel.style.transition = "none";
+        infoCard.style.transition = "none";
+
+        var lo = MIN_W, hi = MAX_W, bestW = MIN_W;
+        while (lo <= hi) {
+          var mid = Math.round((lo + hi) / 2);
+          panel.style.width = mid + "px";
+          infoCard.style.height = "auto";
+          void infoCard.offsetHeight;
+          if (infoCard.scrollHeight <= MAX_H) {
+            bestW = mid;
+            hi = mid - STEP;
+          } else {
+            lo = mid + STEP;
+          }
+        }
+        panel.style.width = bestW + "px";
+        infoCard.style.height = "auto";
+        void infoCard.offsetHeight;
+        var finalH = Math.min(infoCard.scrollHeight, MAX_H);
+        infoCard.style.height = finalH + "px";
+        return { w: bestW, h: finalH };
+      }
+
+      function setInitialLayout() {
+        cardSlice.innerHTML = buildHTML(cur);
+        updateTitle(cur);
+        var dims = measureContentDimensions();
+        panel.style.width = dims.w + "px";
+        infoCard.style.height = dims.h + "px";
+        updateBar();
+        restoreTransitions();
+      }
+
+      function goToInstant(targetIndex) {
+        if (programs.length === 0) return;
+        targetIndex = Math.max(0, Math.min(targetIndex, programs.length - 1));
+        if (targetIndex === cur) return;
+
+        busy = false;
+
+        panel.style.transition = "none";
+        infoCard.style.transition = "none";
+        titleBar.style.transition = "none";
+        titleName.style.transition = "none";
+        cardSlice.style.transition = "none";
+
+        cardSlice.innerHTML = buildHTML(targetIndex);
+        updateTitle(targetIndex);
+
+        var dims = measureContentDimensions();
+        panel.style.width = dims.w + "px";
+        infoCard.style.height = dims.h + "px";
+
+        cur = targetIndex;
+        _lastPI = cur;
+        updateBar();
+
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            panel.style.transition = "";
+            infoCard.style.transition = "";
+            titleBar.style.transition = "";
+            titleName.style.transition = "";
+            cardSlice.style.transition = "";
+            restoreTransitions();
+          });
+        });
+      }
+
+      function goTo(targetIndex) {
+        if (programs.length === 0) return;
+        targetIndex = Math.max(0, Math.min(targetIndex, programs.length - 1));
+        if (targetIndex === cur || busy) return;
+        busy = true;
+        var dx = targetIndex > cur ? -1 : 1;
+        var curW = panel.offsetWidth, curH = infoCard.offsetHeight;
+
+        titleName.style.transition = "opacity 0.04s ease, transform 0.04s ease";
+        titleName.style.opacity = "0";
+        titleName.style.transform = "translateY(" + (dx * -3) + "px)";
+        cardSlice.style.transition = "opacity 0.04s ease, transform 0.04s ease";
+        cardSlice.style.opacity = "0";
+        cardSlice.style.transform = "translateX(" + (dx * 8) + "px)";
+
+        setTimeout(function() {
+          cardSlice.innerHTML = buildHTML(targetIndex);
+          updateTitle(targetIndex);
+          var dims = measureContentDimensions();
+
+          panel.style.transition = "none";
+          infoCard.style.transition = "none";
+          panel.style.width = curW + "px";
+          infoCard.style.height = curH + "px";
+          cardSlice.style.transition = "none";
+          cardSlice.style.opacity = "0";
+          cardSlice.style.transform = "translateX(" + (-dx * 8) + "px)";
+          titleName.style.transition = "none";
+          titleName.style.opacity = "0";
+          titleName.style.transform = "translateY(" + (dx * 3) + "px)";
+          void panel.offsetHeight;
+
+          panel.style.transition = "width 0.2s cubic-bezier(.4,0,.2,1)";
+          panel.style.width = dims.w + "px";
+          infoCard.style.transition = "height 0.2s cubic-bezier(.4,0,.2,1)";
+          infoCard.style.height = dims.h + "px";
+          cardSlice.style.transition = "";
+          cardSlice.style.opacity = "1";
+          cardSlice.style.transform = "translateX(0)";
+          titleName.style.transition = "";
+          titleName.style.opacity = "1";
+          titleName.style.transform = "translateY(0)";
+
+          cur = targetIndex;
+          _lastPI = cur;
+          updateBar();
+          setTimeout(function() {
+            busy = false;
+            restoreTransitions();
+          }, 200);
+        }, 40);
+      }
+
+      function go(dir) { goTo(cur + dir); }
+
+      function toggle() {
+        if (hidden) {
+          hidden = false;
+          restoreTransitions();
+          document.body.classList.remove("hidden");
+          cardSlice.style.transition = "none";
+          cardSlice.style.opacity = "0";
+          cardSlice.style.transform = "translateX(-8px)";
+          void cardSlice.offsetHeight;
+          cardSlice.style.transition = "opacity 0.15s cubic-bezier(0.4,0,0.2,1), transform 0.15s cubic-bezier(0.4,0,0.2,1)";
+          cardSlice.style.opacity = "1";
+          cardSlice.style.transform = "translateX(0)";
+          setTimeout(function() {
+            cardSlice.style.transition = "";
+            cardSlice.style.opacity = "";
+            cardSlice.style.transform = "";
+          }, 170);
+        } else {
+          restoreTransitions();
+          cardSlice.style.transition = "opacity 0.12s ease, transform 0.12s ease";
+          cardSlice.style.opacity = "0";
+          cardSlice.style.transform = "translateX(8px)";
+          setTimeout(function() {
+            hidden = true;
+            document.body.classList.add("hidden");
+            cardSlice.style.transition = "";
+            cardSlice.style.opacity = "";
+            cardSlice.style.transform = "";
+          }, 130);
+        }
+        pushState();
+      }
+
+      function pushState() {
+        _lastPI = cur;
+        _lastPH = hidden;
+        fetch("/api/state", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ programIndex: cur, programHidden: hidden }),
+        }).catch(function() {});
+      }
+
+      function pollState() {
+        fetch("/api/lite-state")
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.programIndex !== undefined && d.programIndex !== _lastPI) {
+              _lastPI = d.programIndex;
+              goToInstant(d.programIndex);
+            }
+            if (d.programHidden !== undefined && d.programHidden !== _lastPH) {
+              _lastPH = d.programHidden;
+              hidden = d.programHidden;
+              restoreTransitions();
+              document.body.classList.toggle("hidden", hidden);
+            }
+          })
+          .catch(function() {});
+      }
+
+      function applySSEData(d) {
+        if (d.programIndex !== undefined && d.programIndex !== _lastPI) {
+          _lastPI = d.programIndex;
+          goToInstant(d.programIndex);
+        }
+        if (d.programHidden !== undefined && d.programHidden !== _lastPH) {
+          _lastPH = d.programHidden;
+          hidden = d.programHidden;
+          restoreTransitions();
+          document.body.classList.toggle("hidden", hidden);
+        }
+      }
+
+      document.addEventListener("keydown", function(e) {
+        switch (e.key) {
+          case "ArrowRight": case "ArrowDown":
+            e.preventDefault(); go(1); break;
+          case "ArrowLeft": case "ArrowUp":
+            e.preventDefault(); go(-1); break;
+          case "0":
+            e.preventDefault(); toggle(); break;
+        }
+      });
+
+      function loadPrograms() {
+        fetch("/programs.json")
+          .then(function(r) {
+            if (!r.ok) throw new Error("not found");
+            return r.json();
+          })
+          .then(function(data) {
+            if (Array.isArray(data) && data.length > 0) programs = data;
+            initDisplay();
+          })
+          .catch(function() {
+            fetch("/api/state")
+              .then(function(r) { return r.json(); })
+              .then(function(d) {
+                if (d.programs && d.programs.length > 0) programs = d.programs;
+                initDisplay();
+              })
+              .catch(function() {
+                cardSlice.innerHTML = '<div style="color:rgba(44,44,46,0.4);font-size:13px;font-weight:500">未找到节目数据</div>';
+                updateTitle(-1);
+                updateBar();
+              });
+          });
+      }
+
+      function initDisplay() {
+        if (programs.length === 0) {
+          cardSlice.innerHTML = '<div style="color:rgba(44,44,46,0.4);font-size:13px;font-weight:500">暂无节目</div>';
+          updateTitle(-1);
+          updateBar();
+          panel.style.width = MIN_W + "px";
+          infoCard.style.height = "60px";
+          restoreTransitions();
+          return;
+        }
+        fetch("/api/lite-state")
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            if (d.programIndex !== undefined) {
+              cur = Math.min(d.programIndex, programs.length - 1);
+              _lastPI = cur;
+            }
+            if (d.programHidden !== undefined) {
+              hidden = d.programHidden;
+              _lastPH = hidden;
+              restoreTransitions();
+              document.body.classList.toggle("hidden", hidden);
+            }
+            setInitialLayout();
+          })
+          .catch(function() {
+            setInitialLayout();
+          });
+      }
+
+      loadPrograms();
+
+      var evtSrc = new EventSource("/api/events");
+      evtSrc.onmessage = function(e) {
+        try {
+          applySSEData(JSON.parse(e.data));
+        } catch(ex) {}
+      };
+      evtSrc.onerror = function() {
+        evtSrc.close();
+        setInterval(pollState, 2000);
+      };
+    </script>
+  </body>
+</html>
