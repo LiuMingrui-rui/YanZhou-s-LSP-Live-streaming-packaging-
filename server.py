@@ -1,3 +1,4 @@
+import copy
 import http.server
 import json
 import socketserver
@@ -7,6 +8,7 @@ import threading
 import hashlib
 import queue
 import socket
+import urllib.parse
 
 DEFAULT_PROGRAMS = [
     {"number":"01","type":"舞蹈","title":"双生","performer":"高二2班 宋俊航、高二14班 祝婉诗","desc":"这支舞蹈演绎一场关于自我平衡与心灵觉醒的成长之旅。每个人内心都存在两面自我：一面迷茫脆弱，一面坚韧向阳。作品通过肢体拉扯、对峙与和解的演绎，诠释接纳自我、打破内耗、重塑内心，最终完成成长蜕变的人生主题。"},
@@ -36,19 +38,30 @@ HOSTS_FILE = "hosts.json"
 PROGRAMS_FILE = "programs.json"
 PRESETS_FILE = "presets.json"
 SETTINGS_FILE = "settings.json"
+DATA_FILE = SETTINGS_FILE
 
 _file_cache = {}
 
-def load_json_file(filename, default):
+def load_settings_file(filename):
+    settings = {
+        "theme": "dark",
+        "programs": [],
+        "hosts": [],
+        "presets": []
+    }
     try:
         with open(filename, "r", encoding="utf-8") as f:
             data = json.load(f)
-            if isinstance(data, list) and len(data) > 0:
-                _file_cache[filename] = data
-                return data
+            if isinstance(data, dict):
+                settings.update(data)
     except:
         pass
-    return default
+
+    settings.setdefault("theme", "dark")
+    settings.setdefault("programs", [])
+    settings.setdefault("hosts", [])
+    settings.setdefault("presets", [])
+    return settings
 
 def save_json_file(filename, data):
     try:
@@ -59,10 +72,12 @@ def save_json_file(filename, data):
     except:
         return False
 
-PROGRAMS = load_json_file(PROGRAMS_FILE, DEFAULT_PROGRAMS)
-HOSTS = load_json_file(HOSTS_FILE, DEFAULT_HOSTS)
-PRESETS = load_json_file(PRESETS_FILE, DEFAULT_PRESETS)
-SETTINGS = load_json_file(SETTINGS_FILE, {"theme": "dark"})
+SETTINGS = load_settings_file(DATA_FILE)
+if save_json_file(DATA_FILE, SETTINGS):
+    pass
+PROGRAMS = SETTINGS.get("programs", [])
+HOSTS = SETTINGS.get("hosts", [])
+PRESETS = SETTINGS.get("presets", [])
 
 STATE = {
     "theme": SETTINGS.get("theme", "dark"),
@@ -81,13 +96,13 @@ STATE = {
     "hostIndex": 0,
     "programs": PROGRAMS,
     "hosts": HOSTS,
+    "presets": PRESETS,
     "leftHostHidden": True,
     "leftHostIndex": 0,
     "leftColor": "rose",
     "rightHostHidden": True,
     "rightHostIndex": 0,
     "rightColor": "blue",
-    "presets": PRESETS,
     "hostSlots": [
         {"hostIndex": 0, "hidden": False, "color": "rose"},
         {"hostIndex": 1, "hidden": False, "color": "purple"},
@@ -112,6 +127,13 @@ _lite_json_cache = None
 _lite_gzip_cache = None
 _lite_hash = None
 _sse_msg_bytes = None
+_sse_clients = []
+_sse_lock = threading.Lock()
+
+def _count_display_clients():
+    with _sse_lock:
+        return sum(1 for client in _sse_clients if client.get("role") == "display")
+
 
 def _build_lite():
     hs = STATE.get("hostSlots", [])
@@ -138,6 +160,7 @@ def _build_lite():
         "showClass": STATE["showClass"],
         "logoX": STATE["logoX"],
         "logoY": STATE["logoY"],
+        "displayClients": _count_display_clients(),
     }
     if len(hs) >= 1:
         r["leftHostHidden"] = hs[0].get("hidden", False) or ah
@@ -178,16 +201,13 @@ _refresh_state_cache()
 # ══════════════════════════════════════
 #  SSE
 # ══════════════════════════════════════
-_sse_clients = []
-_sse_lock = threading.Lock()
 _sse_version = 0
 
 def _build_sse_payload(ver):
-    """用字符串拼接构建 SSE 消息，避免重复 JSON 序列化"""
-    t = _sse_msg_template
-    if t is None:
-        return f'data: {{"v":{ver}}}\n\n'.encode("utf-8")
-    return f'data: {{"v":{ver},{t[1:]}\n\n'.encode("utf-8")
+    """Build SSE message with dynamic lite state and display client count."""
+    lite = _build_lite()
+    payload = json.dumps(lite, ensure_ascii=False, separators=(',', ':'))
+    return f'data: {{"v":{ver},{payload[1:]}\n\n'.encode("utf-8")
 
 # 预计算模板（_refresh_state_cache 中更新）
 _sse_msg_template = None
@@ -205,7 +225,7 @@ def notify_sse_clients():
         dead = []
         for client in _sse_clients:
             try:
-                client.put_nowait(msg)
+                client["queue"].put_nowait(msg)
             except:
                 dead.append(client)
         for d in dead:
@@ -328,9 +348,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         elif self.path == "/api/lite-state":
             with _state_lock:
-                self._send_json(_lite_json_cache, _lite_gzip_cache)
+                lite = _build_lite()
+            raw = json.dumps(lite, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+            gz = gzip.compress(raw, compresslevel=1)
+            self._send_json(raw, gz)
 
-        elif self.path == "/api/events":
+        elif self.path.startswith("/api/events"):
+            parsed = urllib.parse.urlparse(self.path)
+            params = urllib.parse.parse_qs(parsed.query)
+            role = params.get("role", ["display"])[0]
+            if role != "controller":
+                role = "display"
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")
             self.send_header("Cache-Control", "no-cache, no-store")
@@ -339,9 +367,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._cors()
             self.end_headers()
 
-            q = queue.Queue(maxsize=64)
+            q = queue.Queue(maxsize=256)
+            client = {"queue": q, "role": role}
             with _sse_lock:
-                _sse_clients.append(q)
+                _sse_clients.append(client)
             try:
                 # 连接即推当前完整状态
                 self.wfile.write(_build_sse_payload(_sse_version))
@@ -359,16 +388,46 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 pass
             finally:
                 with _sse_lock:
-                    if q in _sse_clients:
-                        _sse_clients.remove(q)
+                    if client in _sse_clients:
+                        _sse_clients.remove(client)
 
         elif self.path == "/api/hosts":
-            raw = json.dumps(HOSTS, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+            with _state_lock:
+                payload = STATE.get("hosts", HOSTS)
+            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
             gz = gzip.compress(raw, compresslevel=1)
             self._send_json(raw, gz)
 
         elif self.path == "/api/settings":
-            raw = json.dumps(SETTINGS, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+            with _state_lock:
+                raw = json.dumps(SETTINGS, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+            gz = gzip.compress(raw, compresslevel=1)
+            self._send_json(raw, gz)
+
+        elif self.path == "/programs.json":
+            with _state_lock:
+                payload = STATE.get("programs", PROGRAMS)
+            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+            gz = gzip.compress(raw, compresslevel=1)
+            self._send_json(raw, gz)
+
+        elif self.path == "/hosts.json":
+            with _state_lock:
+                payload = STATE.get("hosts", HOSTS)
+            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+            gz = gzip.compress(raw, compresslevel=1)
+            self._send_json(raw, gz)
+
+        elif self.path == "/presets.json":
+            with _state_lock:
+                payload = STATE.get("presets", PRESETS)
+            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+            gz = gzip.compress(raw, compresslevel=1)
+            self._send_json(raw, gz)
+
+        elif self.path == "/settings.json":
+            with _state_lock:
+                raw = json.dumps(SETTINGS, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
             gz = gzip.compress(raw, compresslevel=1)
             self._send_json(raw, gz)
 
@@ -401,17 +460,22 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     for k in STATE:
                         if k in data:
                             STATE[k] = data[k]
-                    global PROGRAMS, HOSTS, PRESETS, SETTINGS
                     if "programs" in data:
                         PROGRAMS = data["programs"]
+                        SETTINGS["programs"] = PROGRAMS
+                        STATE["programs"] = PROGRAMS
                     if "hosts" in data:
                         HOSTS = data["hosts"]
+                        SETTINGS["hosts"] = HOSTS
+                        STATE["hosts"] = HOSTS
                     if "presets" in data:
                         PRESETS = data["presets"]
-                    # 保存主题到 settings.json
+                        SETTINGS["presets"] = PRESETS
+                        STATE["presets"] = PRESETS
                     if "theme" in data:
                         SETTINGS["theme"] = data["theme"]
-                        save_json_file(SETTINGS_FILE, SETTINGS)
+                    if "theme" in data or "programs" in data or "hosts" in data or "presets" in data:
+                        save_json_file(DATA_FILE, SETTINGS)
                     changed = _refresh_state_cache()
                     if changed:
                         _rebuild_sse_template()
@@ -441,21 +505,23 @@ class Handler(http.server.BaseHTTPRequestHandler):
         body = self.rfile.read(length)
         try:
             data = json.loads(body)
-            if save_json_file(filename, data):
+            if filename == PROGRAMS_FILE:
+                SETTINGS["programs"] = data
+                PROGRAMS = data
+                STATE["programs"] = data
+            elif filename == HOSTS_FILE:
+                SETTINGS["hosts"] = data
+                HOSTS = data
+                STATE["hosts"] = data
+            elif filename == PRESETS_FILE:
+                SETTINGS["presets"] = data
+                PRESETS = data
+                STATE["presets"] = data
+            elif filename == SETTINGS_FILE:
+                SETTINGS.update(data)
+                STATE["theme"] = SETTINGS.get("theme", "dark")
+            if save_json_file(DATA_FILE, SETTINGS):
                 with _state_lock:
-                    global PROGRAMS, HOSTS, PRESETS, SETTINGS
-                    if filename == PROGRAMS_FILE:
-                        PROGRAMS = data
-                        STATE["programs"] = data
-                    elif filename == HOSTS_FILE:
-                        HOSTS = data
-                        STATE["hosts"] = data
-                    elif filename == PRESETS_FILE:
-                        PRESETS = data
-                        STATE["presets"] = data
-                    elif filename == SETTINGS_FILE:
-                        SETTINGS = data
-                        STATE["theme"] = data.get("theme", "dark")
                     _refresh_state_cache()
                     _rebuild_sse_template()
                 notify_sse_clients()

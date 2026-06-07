@@ -307,6 +307,18 @@
     <script>
       var programs = [];
       var cur = 0, hidden = false, busy = false, _lastPI = 0, _lastPH = false;
+      var reconnectTimer = null;
+      function clearReconnectTimer() {
+        if (reconnectTimer) {
+          clearInterval(reconnectTimer);
+          reconnectTimer = null;
+        }
+      }
+      function startReconnectPolling(fn, ms) {
+        if (!reconnectTimer) {
+          reconnectTimer = setInterval(fn, ms);
+        }
+      }
 
       var cardSlice = document.getElementById("cardSlice");
       var titleName = document.getElementById("titleName");
@@ -663,15 +675,16 @@
 
       loadPrograms();
 
-      var evtSrc = new EventSource("/api/events");
+      var evtSrc = new EventSource("/api/events?role=display");
       evtSrc.onmessage = function(e) {
         try {
+          clearReconnectTimer();
           applySSEData(JSON.parse(e.data));
         } catch(ex) {}
       };
       evtSrc.onerror = function() {
         evtSrc.close();
-        setInterval(pollState, 2000);
+        startReconnectPolling(pollState, 1000);
       };
     </script>
   </body>

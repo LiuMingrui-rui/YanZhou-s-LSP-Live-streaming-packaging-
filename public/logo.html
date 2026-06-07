@@ -25,16 +25,19 @@
 
   .logo-container {
     position: fixed;
-    top: 20px;
-    left: 80px;
+    top: 0;
+    left: 0;
     z-index: 1000;
     display: flex;
     align-items: center;
     animation: container-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    transform: translate3d(80px, 20px, 0);
+    transition: opacity 0.6s ease;
+    will-change: transform, opacity;
   }
   @keyframes container-enter {
-    from { opacity: 0; transform: translateX(-30px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
   .logo-text-wrap {
@@ -121,35 +124,77 @@
   var logoContainer = document.getElementById('logoContainer');
 
   var _lastLH = null;
-  var _lastLX = null;
-  var _lastLY = null;
+  var _lastLX = 80;
+  var _lastLY = 20;
+  var reconnectTimer = null;
+  var evtSrc = null;
+
+  function clearReconnectTimer() {
+    if (reconnectTimer) {
+      clearInterval(reconnectTimer);
+      reconnectTimer = null;
+    }
+  }
+
+  function startReconnectPolling(fn, ms) {
+    if (!reconnectTimer) {
+      reconnectTimer = setInterval(fn, ms);
+    }
+  }
 
   function applyState(d) {
     if (d.logoHidden !== undefined && d.logoHidden !== _lastLH) {
       _lastLH = d.logoHidden;
       overlay.classList.toggle('hidden', d.logoHidden);
     }
+    var nextX = _lastLX;
+    var nextY = _lastLY;
     if (d.logoX !== undefined && d.logoX !== _lastLX) {
       _lastLX = d.logoX;
-      logoContainer.style.left = d.logoX + 'px';
+      nextX = d.logoX;
     }
     if (d.logoY !== undefined && d.logoY !== _lastLY) {
       _lastLY = d.logoY;
-      logoContainer.style.top = d.logoY + 'px';
+      nextY = d.logoY;
+    }
+    if ((d.logoX !== undefined || d.logoY !== undefined) && nextX !== null && nextY !== null) {
+      logoContainer.style.transform = 'translate3d(' + nextX + 'px, ' + nextY + 'px, 0)';
     }
   }
 
-  fetch('/api/state').then(function(r) {
-    if (!r.ok) throw new Error('fail');
-    return r.json();
-  }).then(applyState).catch(function() {});
-
-  setInterval(function() {
-    fetch('/api/state').then(function(r) {
+  function pull() {
+    fetch('/api/lite-state').then(function(r) {
       if (!r.ok) throw new Error('fail');
       return r.json();
-    }).then(applyState).catch(function() {});
-  }, 150);
+    }).then(function(d) {
+      applyState(d);
+    }).catch(function() {});
+  }
+
+  function startSSE() {
+    try {
+      evtSrc = new EventSource('/api/events?role=display');
+      evtSrc.onmessage = function(e) {
+        try {
+          clearReconnectTimer();
+          var d = JSON.parse(e.data);
+          applyState(d);
+        } catch (ex) {}
+      };
+      evtSrc.onerror = function() {
+        if (evtSrc) {
+          evtSrc.close();
+          evtSrc = null;
+        }
+        startReconnectPolling(pull, 1000);
+      };
+    } catch (e) {
+      startReconnectPolling(pull, 1000);
+    }
+  }
+
+  pull();
+  startSSE();
 </script>
 </body>
 </html>

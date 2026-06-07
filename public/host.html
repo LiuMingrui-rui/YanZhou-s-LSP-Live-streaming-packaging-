@@ -215,6 +215,18 @@
       var hostsAllHidden = false;
       var hostX = 80;
       var hostY = 80;
+      var reconnectTimer = null;
+      function clearReconnectTimer() {
+        if (reconnectTimer) {
+          clearInterval(reconnectTimer);
+          reconnectTimer = null;
+        }
+      }
+      function startReconnectPolling(fn, ms) {
+        if (!reconnectTimer) {
+          reconnectTimer = setInterval(fn, ms);
+        }
+      }
       var slots = [
         { idx: 0, hidden: false, color: "rose", busy: false },
         { idx: 0, hidden: false, color: "blue", busy: false },
@@ -464,21 +476,22 @@
       loadHosts();
       
       setTimeout(function () {
-        var evtSrc = new EventSource("/api/events");
+        var evtSrc = new EventSource("/api/events?role=display");
         evtSrc.onmessage = function(e) {
           try {
+            clearReconnectTimer();
             var d = JSON.parse(e.data);
             applySSEData(d);
           } catch(ex) {}
         };
         evtSrc.onerror = function() {
           evtSrc.close();
-          setInterval(function() {
+          startReconnectPolling(function() {
             fetch("/api/lite-state")
               .then(function(r) { return r.json(); })
               .then(function(d) { applySSEData(d); })
               .catch(function() {});
-          }, 2000);
+          }, 1000);
         };
       }, 300);
     </script>

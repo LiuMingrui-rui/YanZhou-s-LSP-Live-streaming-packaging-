@@ -61,6 +61,9 @@
     </div>
 <script>
 var S={team1:0,team2:0,hidden:false,team1Name:'红队',team1Class:'一班',team2Name:'蓝队',team2Class:'二班',team1Fouls:0,team2Fouls:0,showClass:true};
+var reconnectTimer = null;
+function clearReconnectTimer() { if (reconnectTimer) { clearInterval(reconnectTimer); reconnectTimer = null; } }
+function startReconnectPolling(fn, ms) { if (!reconnectTimer) { reconnectTimer = setInterval(fn, ms); } }
 var board=document.getElementById('scoreboard');
 
 function applyState(d) {
@@ -126,16 +129,17 @@ function init() {
     pull();
     setTimeout(function(){board.classList.add('visible')},100);
     
-    var evtSrc = new EventSource("/api/events");
+    var evtSrc = new EventSource("/api/events?role=display");
     evtSrc.onmessage = function(e) {
         try {
+            clearReconnectTimer();
             var d = JSON.parse(e.data);
             applyState(d);
         } catch(ex) {}
     };
     evtSrc.onerror = function() {
         evtSrc.close();
-        setInterval(pull, 2000);
+        startReconnectPolling(pull, 1000);
     };
 }
 
