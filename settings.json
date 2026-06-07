@@ -112,5 +112,11 @@
       },
       "color": "rose"
     }
-  ]
+  ],
+  "language": "zh-CN",
+  "animation": {
+    "enabled": true,
+    "type": "fade",
+    "speed": "normal"
+  }
 }

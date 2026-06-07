@@ -1,4 +1,3 @@
-import copy
 import http.server
 import json
 import socketserver
@@ -10,39 +9,14 @@ import queue
 import socket
 import urllib.parse
 
-DEFAULT_PROGRAMS = [
-    {"number":"01","type":"舞蹈","title":"双生","performer":"高二2班 宋俊航、高二14班 祝婉诗","desc":"这支舞蹈演绎一场关于自我平衡与心灵觉醒的成长之旅。每个人内心都存在两面自我：一面迷茫脆弱，一面坚韧向阳。作品通过肢体拉扯、对峙与和解的演绎，诠释接纳自我、打破内耗、重塑内心，最终完成成长蜕变的人生主题。"},
-    {"number":"02","type":"舞蹈","title":"Wonderful U","performer":"高一30班 黄心妍","desc":"以温柔且有力量的现代舞肢体表达，诠释青春路上的自我成长与破茧蜕变，传递直面困境、心怀暖阳、向阳而生的坚定力量。"},
-    {"number":"03","type":"舞蹈","title":"No Doubt","performer":"高二16班 刘宝莲、高二26班 莫子婷、高二13班 梁绮琳、高二6班 袁梓妍、高二3班 叶乐怡、高二27班 陈蜜儿、高一29班 吴心妍","desc":"整支舞蹈围绕友情主题展开，演绎绵绵思念与内心牵绊，诠释朋友之间不离不弃、彼此守护、坚信情谊永恒不变的初心与信念。"},
-    {"number":"04","type":"舞蹈","title":"La La Land","performer":"高二13班 韩诗嘉、高二24班 袁嘉淇、高二20班 袁娜娜、高二24班 钟梓妍、高二24班 区梓瑶、高二27班 周霏霏、高二17班 苏莉莉、高二24班 贺嘉宝、高一25班 莫蕴晴、高二6班 郭忆楠、高二31班 肖雅徽、高一5班 崔思宜、高二31班 方梓妍、高二10班 李楚烨、高一3班 雷焮熠、高二23班 廖茵潼、高二13班 孙思敏、高二7班 钟紫珊、高二19班 刘鑫恺、高二4班 莫雯莉、高二23班 刘婉忻","desc":"舞步浪漫灵动，旋律温柔缱绻。作品借拉丁舞的风情韵律，演绎逐梦路上的欢喜与怅惘，展现奔赴理想时的昂扬姿态与浪漫情怀。"},
-    {"number":"05","type":"舞蹈","title":"乡愁无边","performer":"高一25班 洪欣楠","desc":"改编自余光中经典诗作《乡愁》，以古典舞含蓄温婉的肢体语言，寄托对故土家园的绵长思念与悠悠情怀，意境悠远，共情满满。"},
-    {"number":"06","type":"舞蹈","title":"非人哉","performer":"高二18班 汪奥雪、高二27班 陈相远、高二18班 黄蔼佳、高二23班 陈婧欢、高二18班 万玥澜、高二29班 林嘉韵、高二3班 叶乐怡、高二12班 聂琪、高二21班 杨晨、高二25班 肖瑾萱","desc":"融合国风元素与元气宅舞风格，以灵动轻快的舞步勾勒国风韵味，用少年元气活力燃动舞台，尽显青春朝气与国风魅力。"},
-    {"number":"07","type":"舞蹈","title":"姑娘的红裙","performer":"高二31班 王雅熙","desc":"以彝族少女的成长心境与青涩情愫为主线，萃取彝族传统舞蹈动律特色。以红裙为情感符号，勾勒少女的灵动俏皮、对生活的热爱以及对美好未来的无限向往，将民族文化与青春诗意完美融合。"},
-    {"number":"08","type":"舞蹈","title":"月亮弯弯","performer":"高二8班 宾恩儿、高二9班 卢泳桥、高二8班 邵若曦、高二29班 何晟琳、高二23班 马艺宸、高二23班 陈佳安、高一22班 杨梓玉、高二2班 宋俊航、高二31班 张秀鑫、高二5班 高妍、高二31班 周盈、高二27班 陈蜜儿、高一9班 桂梓涵、高一28班 罗海璇、高一16班 李雅琳、高一30班 蒋丰远","desc":"作品意境古朴恢宏，以舞蹈演绎家国情怀与少年担当。月色苍茫，山河壮阔，舞者以刚柔并济的舞姿，诠释君子生于乱世、心怀家国、舍身逐光、勇担使命的崇高志向。"},
-    {"number":"09","type":"舞蹈","title":"藤蔓花","performer":"高二25班 杨紫怡、高二18班 冯雨薇","desc":"作品取材自然意象，以傣族经典「三道弯」舞姿为核心，用柔婉的手臂与腰肢，模拟蔓藤缠绕、繁花摇曳的灵动姿态。尽显傣族舞蹈的柔美韵律，诠释草木生生不息的坚韧，尽显自然之美与民族风情。"},
-    {"number":"10","type":"舞蹈","title":"More Jump More","performer":"高二20班 陈秀妍、高二11班 钱宝媛、高二30班 李嘉怡、高二29班 林嘉韵、高二29班 廖芷甄","desc":"以跳跃律动为核心编排，节奏轻快、动作元气满满，尽情展现当代少年肆意洒脱、奔赴热爱、活力满满的青春风采。"},
-    {"number":"11","type":"舞蹈","title":"咏春","performer":"高二6班 袁梓妍、高二6班 郭忆楠、高二13班 梁绮琳、高二20班 何泳潼、高二24班 李诗棋、高二26班 王子莹、高二26班 梁钰熙","desc":"扇影翩跹，温婉雅致。舞者以轻盈身段、灵动扇舞传情达意，一颦一笑皆是东方古韵，举手投足尽显咏春诗意风雅与古典温婉气质。"},
-    {"number":"12","type":"舞蹈","title":"迦陵频伽","performer":"高二31班 郑铭佩、高二31班 王雅熙、高二31班 张秀鑫、高二31班 周盈","desc":"取材莫高窟经典壁画，以传说中人首鸟身、声韵绝美的迦陵频伽神鸟为原型。依托敦煌乐舞根基，结合古典舞舞姿形态，用翘三指、小跳步等经典身段，还原神鸟振翅栖居、随梵音起舞的空灵画面，带观众穿越千年，沉浸式感受敦煌舞蹈的神韵与灵动。"},
-    {"number":"13","type":"舞蹈","title":"Maestro","performer":"高一30班 蒋丰远","desc":"以街舞强劲节奏为底色，化身舞台节奏掌控者。用利落舒展的肢体动作，勾勒节拍秩序，释放少年力量感与气场，演绎街舞独有的律动之美、力量之美。"}
-]
-
-DEFAULT_HOSTS = [
-    {"name": "主持人", "title": "晚会主持人", "photo": "", "bio": "在这里填写主持人的个人介绍和履历。"}
-]
-
-DEFAULT_PRESETS = [
-    {"name": "默认", "left": {"hostIndex": 0}, "right": {"hostIndex": 0}, "color": "rose"}
-]
-
-HOSTS_FILE = "hosts.json"
-PROGRAMS_FILE = "programs.json"
-PRESETS_FILE = "presets.json"
 SETTINGS_FILE = "settings.json"
-DATA_FILE = SETTINGS_FILE
 
+# 文件缓存配置（最多缓存100个文件）
 _file_cache = {}
+_max_file_cache = 100
 
 def load_settings_file(filename):
+    """加载settings配置文件"""
     settings = {
         "theme": "dark",
         "programs": [],
@@ -54,30 +28,37 @@ def load_settings_file(filename):
             data = json.load(f)
             if isinstance(data, dict):
                 settings.update(data)
-    except:
+    except FileNotFoundError:
         pass
+    except json.JSONDecodeError as e:
+        print(f"警告: {filename} JSON格式错误: {e}")
+    except Exception as e:
+        print(f"警告: 读取 {filename} 失败: {e}")
 
     settings.setdefault("theme", "dark")
     settings.setdefault("programs", [])
     settings.setdefault("hosts", [])
     settings.setdefault("presets", [])
+    settings.setdefault("language", "zh-CN")
+    settings.setdefault("animation", {
+        "enabled": True,
+        "type": "fade",
+        "speed": "normal"
+    })
     return settings
 
 def save_json_file(filename, data):
+    """保存JSON文件"""
     try:
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        _file_cache[filename] = data
         return True
-    except:
+    except Exception as e:
+        print(f"错误: 保存 {filename} 失败: {e}")
         return False
 
-SETTINGS = load_settings_file(DATA_FILE)
-if save_json_file(DATA_FILE, SETTINGS):
-    pass
-PROGRAMS = SETTINGS.get("programs", [])
-HOSTS = SETTINGS.get("hosts", [])
-PRESETS = SETTINGS.get("presets", [])
+SETTINGS = load_settings_file(SETTINGS_FILE)
+save_json_file(SETTINGS_FILE, SETTINGS)
 
 STATE = {
     "theme": SETTINGS.get("theme", "dark"),
@@ -94,9 +75,9 @@ STATE = {
     "logoMode": "alternate",
     "hostHidden": True,
     "hostIndex": 0,
-    "programs": PROGRAMS,
-    "hosts": HOSTS,
-    "presets": PRESETS,
+    "programs": SETTINGS.get("programs", []),
+    "hosts": SETTINGS.get("hosts", []),
+    "presets": SETTINGS.get("presets", []),
     "leftHostHidden": True,
     "leftHostIndex": 0,
     "leftColor": "rose",
@@ -126,16 +107,17 @@ _state_hash = None
 _lite_json_cache = None
 _lite_gzip_cache = None
 _lite_hash = None
-_sse_msg_bytes = None
 _sse_clients = []
 _sse_lock = threading.Lock()
+_sse_version = 0
 
 def _count_display_clients():
+    """统计连接的display客户端数"""
     with _sse_lock:
         return sum(1 for client in _sse_clients if client.get("role") == "display")
 
-
 def _build_lite():
+    """构建精简状态对象（用于前端显示）"""
     hs = STATE.get("hostSlots", [])
     ah = STATE.get("hostsAllHidden", True)
     r = {
@@ -174,14 +156,15 @@ def _build_lite():
     return r
 
 def _refresh_state_cache():
+    """刷新state缓存（检测改变并更新）"""
     global _state_json_cache, _state_gzip_cache, _state_hash
     global _lite_json_cache, _lite_gzip_cache, _lite_hash
-    global _sse_msg_bytes
 
     raw = json.dumps(STATE, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
     h = hashlib.md5(raw).hexdigest()
     if h == _state_hash:
         return False
+    
     _state_json_cache = raw
     _state_gzip_cache = gzip.compress(raw, compresslevel=1)
     _state_hash = h
@@ -191,33 +174,16 @@ def _refresh_state_cache():
     _lite_json_cache = lite_raw
     _lite_gzip_cache = gzip.compress(lite_raw, compresslevel=1)
     _lite_hash = hashlib.md5(lite_raw).hexdigest()
-
-    # 预构建 SSE 消息字节，发送时零开销
-    _sse_msg_bytes = None  # 在 notify 时动态构建（需要最新版本号）
     return True
 
-_refresh_state_cache()
-
-# ══════════════════════════════════════
-#  SSE
-# ══════════════════════════════════════
-_sse_version = 0
-
 def _build_sse_payload(ver):
-    """Build SSE message with dynamic lite state and display client count."""
+    """构建SSE消息包（包含版本号）"""
     lite = _build_lite()
     payload = json.dumps(lite, ensure_ascii=False, separators=(',', ':'))
     return f'data: {{"v":{ver},{payload[1:]}\n\n'.encode("utf-8")
 
-# 预计算模板（_refresh_state_cache 中更新）
-_sse_msg_template = None
-
-def _rebuild_sse_template():
-    global _sse_msg_template
-    lite = _build_lite()
-    _sse_msg_template = json.dumps(lite, ensure_ascii=False, separators=(',', ':'))
-
 def notify_sse_clients():
+    """通知所有SSE客户端状态更新"""
     global _sse_version
     _sse_version += 1
     msg = _build_sse_payload(_sse_version)
@@ -226,13 +192,14 @@ def notify_sse_clients():
         for client in _sse_clients:
             try:
                 client["queue"].put_nowait(msg)
-            except:
+            except queue.Full:
+                dead.append(client)
+            except Exception:
                 dead.append(client)
         for d in dead:
             _sse_clients.remove(d)
 
-# 初始化模板
-_rebuild_sse_template()
+_refresh_state_cache()
 
 # ══════════════════════════════════════
 #  Static File Cache
@@ -256,56 +223,74 @@ STATIC_CONTENT_TYPES = {
 }
 
 def get_static_file(filepath):
+    """获取静态文件，支持缓存和gzip压缩"""
     try:
         mtime = os.path.getmtime(filepath)
-    except:
+    except OSError:
         return None, None
+    
     with _static_cache_lock:
         cached = _static_cache.get(filepath)
         if cached and cached[0] == mtime:
             return cached[1], cached[2]
+    
     try:
         with open(filepath, "rb") as f:
             data = f.read()
         ext = os.path.splitext(filepath)[1].lower()
         ct = STATIC_CONTENT_TYPES.get(ext, "application/octet-stream")
         gzip_data = gzip.compress(data, compresslevel=1)
+        
         with _static_cache_lock:
+            # 限制缓存大小，防止无限增长
+            if len(_static_cache) >= _max_file_cache:
+                # 移除最老的缓存项
+                oldest_key = next(iter(_static_cache))
+                del _static_cache[oldest_key]
             _static_cache[filepath] = (mtime, data, gzip_data)
+        
         return data, gzip_data
-    except:
+    except Exception as e:
+        print(f"错误: 读取文件 {filepath} 失败: {e}")
         return None, None
 
 
 class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+    """多线程HTTP服务器"""
     daemon_threads = True
     request_queue_size = 128
 
     def server_activate(self):
+        """优化TCP连接"""
         super().server_activate()
         try:
             self.socket.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-        except:
+        except Exception:
             pass
 
 
 class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, format, *args):
+        """禁用默认日志输出"""
         pass
 
     def _cors(self):
+        """添加CORS响应头"""
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
 
     def _accepts_gzip(self):
+        """检查客户端是否支持gzip"""
         return "gzip" in self.headers.get("Accept-Encoding", "")
 
     def _send_json(self, data_bytes, gzip_data=None):
+        """发送JSON响应（支持gzip压缩）"""
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-cache")
         self._cors()
+        
         if gzip_data and self._accepts_gzip():
             self.send_header("Content-Encoding", "gzip")
             self.end_headers()
@@ -315,23 +300,34 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data_bytes)
 
+    def _send_json_dict(self, data_dict):
+        """发送dict数据为JSON响应"""
+        raw = json.dumps(data_dict, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
+        gz = gzip.compress(raw, compresslevel=1)
+        self._send_json(raw, gz)
+
     def _send_static(self, filepath):
+        """发送静态文件"""
         raw, gz = get_static_file(filepath)
         if raw is None:
             self.send_error(404)
             return
+        
         ext = os.path.splitext(filepath)[1].lower()
         ct = STATIC_CONTENT_TYPES.get(ext, "application/octet-stream")
         etag = hashlib.md5(raw).hexdigest()
+        
         if self.headers.get("If-None-Match", "") == etag:
             self.send_response(304)
             self.end_headers()
             return
+        
         self.send_response(200)
         self.send_header("Content-Type", ct)
         self.send_header("ETag", etag)
         self.send_header("Cache-Control", "max-age=0, must-revalidate")
         self._cors()
+        
         if gz and self._accepts_gzip():
             self.send_header("Content-Encoding", "gzip")
             self.end_headers()
@@ -342,6 +338,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(raw)
 
     def do_GET(self):
+        """处理GET请求"""
         if self.path == "/api/state":
             with _state_lock:
                 self._send_json(_state_json_cache, _state_gzip_cache)
@@ -349,190 +346,212 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif self.path == "/api/lite-state":
             with _state_lock:
                 lite = _build_lite()
-            raw = json.dumps(lite, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
-            gz = gzip.compress(raw, compresslevel=1)
-            self._send_json(raw, gz)
+            self._send_json_dict(lite)
 
         elif self.path.startswith("/api/events"):
-            parsed = urllib.parse.urlparse(self.path)
-            params = urllib.parse.parse_qs(parsed.query)
-            role = params.get("role", ["display"])[0]
-            if role != "controller":
-                role = "display"
-            self.send_response(200)
-            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
-            self.send_header("Cache-Control", "no-cache, no-store")
-            self.send_header("Connection", "keep-alive")
-            self.send_header("X-Accel-Buffering", "no")
-            self._cors()
-            self.end_headers()
-
-            q = queue.Queue(maxsize=256)
-            client = {"queue": q, "role": role}
-            with _sse_lock:
-                _sse_clients.append(client)
-            try:
-                # 连接即推当前完整状态
-                self.wfile.write(_build_sse_payload(_sse_version))
-                self.wfile.flush()
-
-                while True:
-                    try:
-                        msg = q.get(timeout=25)
-                        self.wfile.write(msg)
-                        self.wfile.flush()
-                    except queue.Empty:
-                        self.wfile.write(b": heartbeat\n\n")
-                        self.wfile.flush()
-            except:
-                pass
-            finally:
-                with _sse_lock:
-                    if client in _sse_clients:
-                        _sse_clients.remove(client)
+            self._handle_sse_connect()
 
         elif self.path == "/api/hosts":
             with _state_lock:
-                payload = STATE.get("hosts", HOSTS)
-            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
-            gz = gzip.compress(raw, compresslevel=1)
-            self._send_json(raw, gz)
+                payload = STATE.get("hosts", [])
+            self._send_json_dict(payload)
 
         elif self.path == "/api/settings":
             with _state_lock:
-                raw = json.dumps(SETTINGS, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
-            gz = gzip.compress(raw, compresslevel=1)
-            self._send_json(raw, gz)
+                self._send_json_dict(SETTINGS)
 
-        elif self.path == "/programs.json":
+        elif self.path in ("/programs.json", "/hosts.json", "/presets.json"):
+            # 统一处理JSON端点
+            key = self.path[1:-5]  # 移除/ 和 .json
             with _state_lock:
-                payload = STATE.get("programs", PROGRAMS)
-            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
-            gz = gzip.compress(raw, compresslevel=1)
-            self._send_json(raw, gz)
-
-        elif self.path == "/hosts.json":
-            with _state_lock:
-                payload = STATE.get("hosts", HOSTS)
-            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
-            gz = gzip.compress(raw, compresslevel=1)
-            self._send_json(raw, gz)
-
-        elif self.path == "/presets.json":
-            with _state_lock:
-                payload = STATE.get("presets", PRESETS)
-            raw = json.dumps(payload, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
-            gz = gzip.compress(raw, compresslevel=1)
-            self._send_json(raw, gz)
+                payload = STATE.get(key, [])
+            self._send_json_dict(payload)
 
         elif self.path == "/settings.json":
             with _state_lock:
-                raw = json.dumps(SETTINGS, ensure_ascii=False, separators=(',', ':')).encode("utf-8")
-            gz = gzip.compress(raw, compresslevel=1)
-            self._send_json(raw, gz)
+                self._send_json_dict(SETTINGS)
 
         else:
-            path = self.path.split("?")[0]
-            if path == "/":
-                path = "/controller.html"
-            # 处理 /public/ 前缀
-            if path.startswith("/public/"):
-                path = path[len("/public"):]
-            # 从 public 文件夹加载
-            filepath = os.path.join(os.getcwd(), "public", path.lstrip("/"))
-            if not os.path.isfile(filepath):
-                # 如果 public 里没有，尝试从根目录加载
-                filepath = os.path.join(os.getcwd(), path.lstrip("/"))
-            if os.path.isfile(filepath):
-                self._send_static(filepath)
-            else:
-                self.send_error(404)
+            self._handle_static_file()
+
+    def _handle_sse_connect(self):
+        """处理SSE连接"""
+        parsed = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(parsed.query)
+        role = params.get("role", ["display"])[0]
+        if role != "controller":
+            role = "display"
+        
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache, no-store")
+        self.send_header("Connection", "keep-alive")
+        self.send_header("X-Accel-Buffering", "no")
+        self._cors()
+        self.end_headers()
+
+        q = queue.Queue(maxsize=256)
+        client = {"queue": q, "role": role}
+        with _sse_lock:
+            _sse_clients.append(client)
+        
+        try:
+            # 连接即推当前完整状态
+            self.wfile.write(_build_sse_payload(_sse_version))
+            self.wfile.flush()
+
+            while True:
+                try:
+                    msg = q.get(timeout=25)
+                    self.wfile.write(msg)
+                    self.wfile.flush()
+                except queue.Empty:
+                    self.wfile.write(b": heartbeat\n\n")
+                    self.wfile.flush()
+        except Exception:
+            pass
+        finally:
+            with _sse_lock:
+                if client in _sse_clients:
+                    _sse_clients.remove(client)
+
+    def _handle_static_file(self):
+        """处理静态文件请求"""
+        path = self.path.split("?")[0]
+        if path == "/":
+            path = "/controller.html"
+        
+        # 处理 /public/ 前缀
+        if path.startswith("/public/"):
+            path = path[len("/public"):]
+        
+        # 从 public 文件夹加载
+        filepath = os.path.join(os.getcwd(), "public", path.lstrip("/"))
+        if not os.path.isfile(filepath):
+            # 如果 public 里没有，尝试从根目录加载
+            filepath = os.path.join(os.getcwd(), path.lstrip("/"))
+        
+        if os.path.isfile(filepath):
+            self._send_static(filepath)
+        else:
+            self.send_error(404)
 
     def do_POST(self):
+        """处理POST请求"""
         if self.path == "/api/state":
-            length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length)
-            changed = False
-            try:
-                data = json.loads(body)
-                with _state_lock:
-                    old_hash = _state_hash
-                    for k in STATE:
-                        if k in data:
-                            STATE[k] = data[k]
-                    if "programs" in data:
-                        PROGRAMS = data["programs"]
-                        SETTINGS["programs"] = PROGRAMS
-                        STATE["programs"] = PROGRAMS
-                    if "hosts" in data:
-                        HOSTS = data["hosts"]
-                        SETTINGS["hosts"] = HOSTS
-                        STATE["hosts"] = HOSTS
-                    if "presets" in data:
-                        PRESETS = data["presets"]
-                        SETTINGS["presets"] = PRESETS
-                        STATE["presets"] = PRESETS
-                    if "theme" in data:
-                        SETTINGS["theme"] = data["theme"]
-                    if "theme" in data or "programs" in data or "hosts" in data or "presets" in data:
-                        save_json_file(DATA_FILE, SETTINGS)
-                    changed = _refresh_state_cache()
-                    if changed:
-                        _rebuild_sse_template()
-                if changed:
-                    notify_sse_clients()
-            except:
-                pass
-            with _state_lock:
-                self._send_json(_lite_json_cache, _lite_gzip_cache)
+            self._handle_state_update()
         else:
             self.send_error(404)
+
+    def _handle_state_update(self):
+        """处理状态更新"""
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            if length == 0:
+                self.send_error(400)
+                return
+            
+            body = self.rfile.read(length)
+            data = json.loads(body)
+        except (ValueError, json.JSONDecodeError):
+            self.send_error(400)
+            return
+        except Exception as e:
+            print(f"错误: 读取请求体失败: {e}")
+            self.send_error(400)
+            return
+
+        changed = False
+        try:
+            with _state_lock:
+                # 更新STATE中的所有字段
+                for k in list(STATE.keys()):
+                    if k in data:
+                        STATE[k] = data[k]
+                
+                # 同步到SETTINGS并保存
+                if "programs" in data:
+                    SETTINGS["programs"] = data["programs"]
+                if "hosts" in data:
+                    SETTINGS["hosts"] = data["hosts"]
+                if "presets" in data:
+                    SETTINGS["presets"] = data["presets"]
+                if "theme" in data:
+                    SETTINGS["theme"] = data["theme"]
+                
+                # 需要保存配置的字段
+                if any(k in data for k in ["programs", "hosts", "presets", "theme"]):
+                    if save_json_file(SETTINGS_FILE, SETTINGS):
+                        changed = _refresh_state_cache()
+                    else:
+                        self.send_error(500)
+                        return
+                else:
+                    changed = _refresh_state_cache()
+            
+            if changed:
+                notify_sse_clients()
+        except Exception as e:
+            print(f"错误: 处理状态更新失败: {e}")
+            self.send_error(500)
+            return
+
+        # 返回精简状态
+        with _state_lock:
+            self._send_json(_lite_json_cache, _lite_gzip_cache)
 
     def do_PUT(self):
-        if self.path == "/" + PROGRAMS_FILE:
-            self._handle_json_put(PROGRAMS_FILE)
-        elif self.path == "/" + HOSTS_FILE:
-            self._handle_json_put(HOSTS_FILE)
-        elif self.path == "/" + PRESETS_FILE:
-            self._handle_json_put(PRESETS_FILE)
-        elif self.path == "/" + SETTINGS_FILE:
-            self._handle_json_put(SETTINGS_FILE)
+        """处理PUT请求"""
+        if self.path == "/settings.json":
+            self._handle_json_put("settings")
+        elif self.path == "/programs.json":
+            self._handle_json_put("programs")
+        elif self.path == "/hosts.json":
+            self._handle_json_put("hosts")
+        elif self.path == "/presets.json":
+            self._handle_json_put("presets")
         else:
             self.send_error(404)
 
-    def _handle_json_put(self, filename):
-        length = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(length)
+    def _handle_json_put(self, key):
+        """统一处理JSON PUT请求"""
         try:
+            length = int(self.headers.get("Content-Length", 0))
+            if length == 0:
+                self.send_error(400)
+                return
+            
+            body = self.rfile.read(length)
             data = json.loads(body)
-            if filename == PROGRAMS_FILE:
-                SETTINGS["programs"] = data
-                PROGRAMS = data
-                STATE["programs"] = data
-            elif filename == HOSTS_FILE:
-                SETTINGS["hosts"] = data
-                HOSTS = data
-                STATE["hosts"] = data
-            elif filename == PRESETS_FILE:
-                SETTINGS["presets"] = data
-                PRESETS = data
-                STATE["presets"] = data
-            elif filename == SETTINGS_FILE:
-                SETTINGS.update(data)
-                STATE["theme"] = SETTINGS.get("theme", "dark")
-            if save_json_file(DATA_FILE, SETTINGS):
-                with _state_lock:
-                    _refresh_state_cache()
-                    _rebuild_sse_template()
-                notify_sse_clients()
-                raw = json.dumps({"ok": True}).encode("utf-8")
-                self._send_json(raw)
-            else:
-                self.send_error(500)
-        except:
+        except (ValueError, json.JSONDecodeError):
             self.send_error(400)
+            return
+        except Exception as e:
+            print(f"错误: 读取请求体失败: {e}")
+            self.send_error(400)
+            return
+
+        try:
+            with _state_lock:
+                if key == "settings":
+                    SETTINGS.update(data)
+                    STATE["theme"] = SETTINGS.get("theme", "dark")
+                else:
+                    SETTINGS[key] = data
+                    STATE[key] = data
+                
+                if save_json_file(SETTINGS_FILE, SETTINGS):
+                    _refresh_state_cache()
+                    notify_sse_clients()
+                    self._send_json_dict({"ok": True})
+                else:
+                    self.send_error(500)
+        except Exception as e:
+            print(f"错误: 处理PUT请求失败: {e}")
+            self.send_error(500)
 
     def do_OPTIONS(self):
+        """处理CORS预检请求"""
         self.send_response(200)
         self._cors()
         self.end_headers()
@@ -541,11 +560,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = 8000
     server = ThreadedHTTPServer(("0.0.0.0", port), Handler)
-    print(f"服务器已启动: http://localhost:{port}")
-    print(f"  计分板:      http://localhost:{port}/public/scoreboard.html")
-    print(f"  节目单:      http://localhost:{port}/public/program.html")
-    print(f"  主持人字幕条: http://localhost:{port}/public/host.html")
-    print(f"  Logo 挂角:   http://localhost:{port}/public/logo.html")
-    print(f"  控制面板:    http://localhost:{port}/public/controller.html")
+    print(f"✓ 服务器已启动: http://localhost:{port}")
+    print(f"  • 计分板:       http://localhost:{port}/public/scoreboard.html")
+    print(f"  • 节目单:       http://localhost:{port}/public/program.html")
+    print(f"  • 主持人字幕条: http://localhost:{port}/public/host.html")
+    print(f"  • Logo 挂角:    http://localhost:{port}/public/logo.html")
+    print(f"  • 控制面板:     http://localhost:{port}/public/controller.html")
     print(f"  (HTML文件在 public/ 文件夹)")
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\n✗ 服务器已关闭")
+        server.shutdown()
+

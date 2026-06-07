@@ -1,0 +1,307 @@
+/* ════════════════════════════════════════ */
+/* 动画/过渡效果 CSS */
+/* ════════════════════════════════════════ */
+
+/* 动画时间变量 */
+:root {
+  --animation-duration-slow: 1s;
+  --animation-duration-normal: 0.5s;
+  --animation-duration-fast: 0.3s;
+  --animation-duration: var(--animation-duration-normal);
+}
+
+/* ════════════════════════════════════════ */
+/* 淡出/淡入动画 */
+/* ════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn var(--animation-duration) ease-in-out forwards;
+}
+
+.animate-fade-out {
+  animation: fadeOut var(--animation-duration) ease-in-out forwards;
+}
+
+/* ════════════════════════════════════════ */
+/* 滑动动画 */
+/* ════════════════════════════════════════ */
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutLeft {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes slideOutRight {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft var(--animation-duration) ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight var(--animation-duration) ease-out forwards;
+}
+
+.animate-slide-in-up {
+  animation: slideInUp var(--animation-duration) ease-out forwards;
+}
+
+.animate-slide-in-down {
+  animation: slideInDown var(--animation-duration) ease-out forwards;
+}
+
+.animate-slide-out-left {
+  animation: slideOutLeft var(--animation-duration) ease-in forwards;
+}
+
+.animate-slide-out-right {
+  animation: slideOutRight var(--animation-duration) ease-in forwards;
+}
+
+/* ════════════════════════════════════════ */
+/* 缩放动画 */
+/* ════════════════════════════════════════ */
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--animation-duration) ease-out forwards;
+}
+
+.animate-scale-out {
+  animation: scaleOut var(--animation-duration) ease-in forwards;
+}
+
+/* ════════════════════════════════════════ */
+/* 旋转动画 */
+/* ════════════════════════════════════════ */
+
+@keyframes rotateIn {
+  from {
+    transform: rotate(-180deg);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes rotateOut {
+  from {
+    transform: rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(180deg);
+    opacity: 0;
+  }
+}
+
+.animate-rotate-in {
+  animation: rotateIn var(--animation-duration) ease-out forwards;
+}
+
+.animate-rotate-out {
+  animation: rotateOut var(--animation-duration) ease-in forwards;
+}
+
+/* ════════════════════════════════════════ */
+/* 弹跳动画 */
+/* ════════════════════════════════════════ */
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.animate-bounce-in {
+  animation: bounceIn var(--animation-duration) ease-out forwards;
+}
+
+.animate-bounce-out {
+  animation: bounceOut var(--animation-duration) ease-in forwards;
+}
+
+/* ════════════════════════════════════════ */
+/* 数字滚动动画 */
+/* ════════════════════════════════════════ */
+
+@keyframes slideNumber {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-number-change {
+  animation: slideNumber 0.3s ease-out forwards;
+}
+
+/* ════════════════════════════════════════ */
+/* 脉冲动画（用于实时更新指示） */
+/* ════════════════════════════════════════ */
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* ════════════════════════════════════════ */
+/* 过渡效果类 */
+/* ════════════════════════════════════════ */
+
+.transition-all {
+  transition: all var(--animation-duration) ease-in-out;
+}
+
+.transition-opacity {
+  transition: opacity var(--animation-duration) ease-in-out;
+}
+
+.transition-transform {
+  transition: transform var(--animation-duration) ease-in-out;
+}
+
+.transition-colors {
+  transition: color var(--animation-duration) ease-in-out, background-color var(--animation-duration) ease-in-out, border-color var(--animation-duration) ease-in-out;
+}
+
+/* ════════════════════════════════════════ */
+/* 禁用动画 */
+/* ════════════════════════════════════════ */
+
+.no-animation,
+.no-animation * {
+  animation: none !important;
+  transition: none !important;
+}
