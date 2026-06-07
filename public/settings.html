@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="settings">设置</title>
+    <link rel="stylesheet" href="/animations.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 40px;
+            font-size: 28px;
+        }
+
+        .settings-group {
+            margin-bottom: 30px;
+        }
+
+        .settings-group label {
+            display: block;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .select-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        select, button {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        select {
+            grid-column: 1;
+        }
+
+        select:hover, select:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .preview-section {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+
+        .preview-section h3 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .animation-demo {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .demo-box {
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .demo-box:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 28px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 28px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        .info-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .select-group {
+                grid-template-columns: 1fr;
+            }
+
+            select {
+                grid-column: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 data-i18n="settings">设置</h1>
+
+        <!-- 语言设置 -->
+        <div class="settings-group">
+            <label data-i18n="language">语言</label>
+            <select id="language" class="select-group">
+                <option value="zh-CN">中文 (Chinese)</option>
+                <option value="en-US">English (English)</option>
+                <option value="ja-JP">日本語 (Japanese)</option>
+            </select>
+            <p class="info-text">选择显示语言</p>
+        </div>
+
+        <!-- 动画设置 -->
+        <div class="settings-group">
+            <label data-i18n="animation">动画</label>
+            
+            <!-- 启用/禁用 -->
+            <div class="toggle-switch">
+                <span data-i18n="show">显示</span>
+                <label class="switch">
+                    <input type="checkbox" id="animationEnabled" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <p class="info-text" data-i18n="animation_speed">动画速度</p>
+
+            <!-- 动画类型 -->
+            <div class="select-group">
+                <div>
+                    <label style="font-size: 12px; color: #999;" data-i18n="animation_type">动画类型</label>
+                    <select id="animationType">
+                        <option value="fade" data-i18n="fade">淡出/淡入</option>
+                        <option value="slide" data-i18n="slide">滑动</option>
+                        <option value="scale" data-i18n="scale">缩放</option>
+                        <option value="rotate" data-i18n="rotate">旋转</option>
+                        <option value="bounce" data-i18n="bounce">弹跳</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 12px; color: #999;" data-i18n="animation_speed">动画速度</label>
+                    <select id="animationSpeed">
+                        <option value="slow" data-i18n="speed_slow">慢</option>
+                        <option value="normal" selected data-i18n="speed_normal">正常</option>
+                        <option value="fast" data-i18n="speed_fast">快</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 动画预览 -->
+        <div class="preview-section">
+            <h3 data-i18n="animation">动画预览</h3>
+            <div class="animation-demo">
+                <div class="demo-box" onclick="previewAnimation('in')">
+                    <span data-i18n="show">进入</span>
+                </div>
+                <div class="demo-box" onclick="previewAnimation('out')">
+                    <span data-i18n="hide">退出</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="button-group">
+            <button class="btn-primary" onclick="saveSettings()" data-i18n="save">保存</button>
+            <button class="btn-secondary" onclick="resetSettings()" data-i18n="cancel">重置</button>
+        </div>
+    </div>
+
+    <script src="/i18n-animation.js"></script>
+    <script>
+        // 初始化设置页面
+        async function initSettings() {
+            await initAllSystems();
+
+            // 获取当前设置
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+                
+                document.getElementById('language').value = settings.language || 'zh-CN';
+                document.getElementById('animationType').value = settings.animation?.type || 'fade';
+                document.getElementById('animationSpeed').value = settings.animation?.speed || 'normal';
+                document.getElementById('animationEnabled').checked = settings.animation?.enabled !== false;
+            } catch (error) {
+                console.error('获取设置失败:', error);
+            }
+
+            // 绑定事件
+            document.getElementById('language').addEventListener('change', (e) => {
+                i18n.setLanguage(e.target.value);
+            });
+
+            document.getElementById('animationType').addEventListener('change', (e) => {
+                animation.setAnimationType(e.target.value);
+            });
+
+            document.getElementById('animationSpeed').addEventListener('change', (e) => {
+                animation.setAnimationSpeed(e.target.value);
+            });
+
+            document.getElementById('animationEnabled').addEventListener('change', (e) => {
+                animation.setAnimationEnabled(e.target.checked);
+            });
+        }
+
+        // 保存设置
+        async function saveSettings() {
+            const data = {
+                language: document.getElementById('language').value,
+                animation: {
+                    enabled: document.getElementById('animationEnabled').checked,
+                    type: document.getElementById('animationType').value,
+                    speed: document.getElementById('animationSpeed').value
+                }
+            };
+
+            try {
+                const response = await fetch('/api/state', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert(t('update') || '更新成功！');
+                }
+            } catch (error) {
+                console.error('保存设置失败:', error);
+                alert('保存失败，请重试');
+            }
+        }
+
+        // 重置设置
+        function resetSettings() {
+            location.reload();
+        }
+
+        // 动画预览
+        async function previewAnimation(direction) {
+            const box = event.target.closest('.demo-box');
+            if (direction === 'in') {
+                await animation.animateIn(box);
+            } else {
+                await animation.animateOut(box);
+            }
+        }
+
+        // 页面加载完成后初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initSettings);
+        } else {
+            initSettings();
+        }
+    </script>
+</body>
+</html>
