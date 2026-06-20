@@ -308,17 +308,24 @@
       var programs = [];
       var cur = 0, hidden = false, busy = false, _lastPI = 0, _lastPH = false;
       var reconnectTimer = null;
+      var reconnectDelay = 1000;
+      var RECONNECT_MAX = 30000;
       function clearReconnectTimer() {
         if (reconnectTimer) {
-          clearInterval(reconnectTimer);
+          clearTimeout(reconnectTimer);
           reconnectTimer = null;
         }
       }
-      function startReconnectPolling(fn, ms) {
+      function startReconnectPolling(fn) {
         if (!reconnectTimer) {
-          reconnectTimer = setInterval(fn, ms);
+          reconnectTimer = setTimeout(function() {
+            reconnectTimer = null;
+            fn();
+          }, reconnectDelay);
+          reconnectDelay = Math.min(reconnectDelay * 1.5, RECONNECT_MAX);
         }
       }
+      function resetReconnectDelay() { reconnectDelay = 1000; }
 
       var cardSlice = document.getElementById("cardSlice");
       var titleName = document.getElementById("titleName");
@@ -679,12 +686,13 @@
       evtSrc.onmessage = function(e) {
         try {
           clearReconnectTimer();
+          resetReconnectDelay();
           applySSEData(JSON.parse(e.data));
         } catch(ex) {}
       };
       evtSrc.onerror = function() {
         evtSrc.close();
-        startReconnectPolling(pollState, 1000);
+        startReconnectPolling(pollState);
       };
     </script>
   </body>

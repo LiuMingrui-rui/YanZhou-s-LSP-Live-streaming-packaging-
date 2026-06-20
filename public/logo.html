@@ -127,20 +127,28 @@
   var _lastLX = 80;
   var _lastLY = 20;
   var reconnectTimer = null;
+  var reconnectDelay = 1000;
+  var RECONNECT_MAX = 30000;
   var evtSrc = null;
 
   function clearReconnectTimer() {
     if (reconnectTimer) {
-      clearInterval(reconnectTimer);
+      clearTimeout(reconnectTimer);
       reconnectTimer = null;
     }
   }
 
-  function startReconnectPolling(fn, ms) {
+  function startReconnectPolling(fn) {
     if (!reconnectTimer) {
-      reconnectTimer = setInterval(fn, ms);
+      reconnectTimer = setTimeout(function() {
+        reconnectTimer = null;
+        fn();
+      }, reconnectDelay);
+      reconnectDelay = Math.min(reconnectDelay * 1.5, RECONNECT_MAX);
     }
   }
+
+  function resetReconnectDelay() { reconnectDelay = 1000; }
 
   function applyState(d) {
     if (d.logoHidden !== undefined && d.logoHidden !== _lastLH) {
@@ -177,6 +185,7 @@
       evtSrc.onmessage = function(e) {
         try {
           clearReconnectTimer();
+          resetReconnectDelay();
           var d = JSON.parse(e.data);
           applyState(d);
         } catch (ex) {}
@@ -186,7 +195,7 @@
           evtSrc.close();
           evtSrc = null;
         }
-        startReconnectPolling(pull, 1000);
+        startReconnectPolling(pull);
       };
     } catch (e) {
       startReconnectPolling(pull, 1000);

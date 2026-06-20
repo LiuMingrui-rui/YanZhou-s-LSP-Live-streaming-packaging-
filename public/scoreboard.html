@@ -62,8 +62,19 @@
 <script>
 var S={team1:0,team2:0,hidden:false,team1Name:'红队',team1Class:'一班',team2Name:'蓝队',team2Class:'二班',team1Fouls:0,team2Fouls:0,showClass:true};
 var reconnectTimer = null;
+var reconnectDelay = 1000;
+var RECONNECT_MAX = 30000;
 function clearReconnectTimer() { if (reconnectTimer) { clearInterval(reconnectTimer); reconnectTimer = null; } }
-function startReconnectPolling(fn, ms) { if (!reconnectTimer) { reconnectTimer = setInterval(fn, ms); } }
+function startReconnectPolling(fn) {
+  if (!reconnectTimer) {
+    reconnectTimer = setTimeout(function() {
+      reconnectTimer = null;
+      fn();
+    }, reconnectDelay);
+    reconnectDelay = Math.min(reconnectDelay * 1.5, RECONNECT_MAX);
+  }
+}
+function resetReconnectDelay() { reconnectDelay = 1000; }
 var board=document.getElementById('scoreboard');
 
 function applyState(d) {
@@ -133,13 +144,14 @@ function init() {
     evtSrc.onmessage = function(e) {
         try {
             clearReconnectTimer();
+            resetReconnectDelay();
             var d = JSON.parse(e.data);
             applyState(d);
         } catch(ex) {}
     };
     evtSrc.onerror = function() {
         evtSrc.close();
-        startReconnectPolling(pull, 1000);
+        startReconnectPolling(pull);
     };
 }
 

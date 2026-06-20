@@ -216,17 +216,28 @@
       var hostX = 80;
       var hostY = 80;
       var reconnectTimer = null;
+      var reconnectDelay = 1000;
+      var RECONNECT_MAX = 30000;
       function clearReconnectTimer() {
         if (reconnectTimer) {
-          clearInterval(reconnectTimer);
+          clearTimeout(reconnectTimer);
           reconnectTimer = null;
         }
       }
-      function startReconnectPolling(fn, ms) {
+      function startReconnectPolling(fn) {
         if (!reconnectTimer) {
-          reconnectTimer = setInterval(fn, ms);
+          reconnectTimer = setTimeout(function() {
+            reconnectTimer = null;
+            fn();
+          }, reconnectDelay);
+          reconnectDelay = Math.min(reconnectDelay * 1.5, RECONNECT_MAX);
         }
       }
+      function resetReconnectDelay() { reconnectDelay = 1000; }
+
+      var $cache = {};
+      function $(id) { return $cache[id] || ($cache[id] = document.getElementById(id)); }
+
       var slots = [
         { idx: 0, hidden: false, color: "rose", busy: false },
         { idx: 0, hidden: false, color: "blue", busy: false },
@@ -241,24 +252,24 @@
       function setContent(i) {
         var s = slots[i],
           h = s.idx >= 0 && s.idx < hosts.length ? hosts[s.idx] : null;
-        document.getElementById("s" + i + "Name").textContent = h ? h.name || "" : "暂无主持人";
-        document.getElementById("s" + i + "Class").textContent = h ? h.title || "" : "";
-        document.getElementById("s" + i + "Div").style.display = h && h.title ? "block" : "none";
+        $("s" + i + "Name").textContent = h ? h.name || "" : "暂无主持人";
+        $("s" + i + "Class").textContent = h ? h.title || "" : "";
+        $("s" + i + "Div").style.display = h && h.title ? "block" : "none";
       }
 
       function applyHostPosition() {
-        var wrap = document.getElementById("hostsWrap");
+        var wrap = $("hostsWrap");
         wrap.style.left = hostX + "px";
         wrap.style.bottom = hostY + "px";
         wrap.style.right = hostX + "px";
       }
 
       function refresh() {
-        var wrap = document.getElementById("hostsWrap");
+        var wrap = $("hostsWrap");
         wrap.className = "hosts-wrap" + (hostsAllHidden ? " master-hidden" : "");
         var rStart = rs();
         for (var i = 0; i < 4; i++) {
-          var el = document.getElementById("slot" + i),
+          var el = $("slot" + i),
             s = slots[i];
           if (i >= hostSlotCount) {
             el.style.display = "none";
@@ -282,7 +293,7 @@
         if (t === s.idx || s.busy) return;
         s.idx = t;
         s.busy = true;
-        var el = document.getElementById("slot" + i);
+        var el = $("slot" + i);
         var isR = i >= rs();
         var cc = "slot color-" + (s.color || "rose") + (isR ? " mirrored" : "");
         if (!s.hidden && !hostsAllHidden && i < hostSlotCount) {
@@ -395,8 +406,7 @@
           }
         }
         if (d.hosts && d.hosts.length > 0) {
-          var nh = JSON.stringify(d.hosts);
-          if (nh !== JSON.stringify(hosts)) {
+          if (d.hosts.length !== hosts.length || d.hosts.some(function(h, i) { return !hosts[i] || h.name !== hosts[i].name || h.title !== hosts[i].title; })) {
             hosts = d.hosts;
             for (var i = 0; i < 4; i++) {
               if (slots[i].idx >= hosts.length)
@@ -433,7 +443,7 @@
               .then(function (d) { if (d.hosts && d.hosts.length > 0) hosts = d.hosts; initDisplay(); })
               .catch(function () {
                 for (var i = 0; i < 4; i++)
-                  document.getElementById("s" + i + "Name").textContent = "未找到主持人数据";
+                  $("s" + i + "Name").textContent = "未找到主持人数据";
               });
           });
       }
@@ -441,7 +451,7 @@
       function initDisplay() {
         if (!hosts.length) {
           for (var i = 0; i < 4; i++)
-            document.getElementById("s" + i + "Name").textContent = "暂无主持人";
+            $("s" + i + "Name").textContent = "暂无主持人";
           refresh();
           return;
         }
@@ -480,6 +490,7 @@
         evtSrc.onmessage = function(e) {
           try {
             clearReconnectTimer();
+            resetReconnectDelay();
             var d = JSON.parse(e.data);
             applySSEData(d);
           } catch(ex) {}
@@ -491,7 +502,7 @@
               .then(function(r) { return r.json(); })
               .then(function(d) { applySSEData(d); })
               .catch(function() {});
-          }, 1000);
+          });
         };
       }, 300);
     </script>

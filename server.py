@@ -114,7 +114,7 @@ _sse_version = 0
 def _count_display_clients():
     """统计连接的display客户端数"""
     with _sse_lock:
-        return sum(1 for client in _sse_clients if client.get("role") == "display")
+        return sum(1 for c in _sse_clients if c.get("role") == "display")
 
 def _build_lite():
     """构建精简状态对象（用于前端显示）"""
@@ -177,10 +177,12 @@ def _refresh_state_cache():
     return True
 
 def _build_sse_payload(ver):
-    """构建SSE消息包（包含版本号）"""
-    lite = _build_lite()
-    payload = json.dumps(lite, ensure_ascii=False, separators=(',', ':'))
-    return f'data: {{"v":{ver},{payload[1:]}\n\n'.encode("utf-8")
+    """构建SSE消息包（包含版本号），复用缓存的lite JSON"""
+    global _lite_json_cache
+    if _lite_json_cache is None:
+        _refresh_state_cache()
+    lite_str = _lite_json_cache.decode("utf-8") if isinstance(_lite_json_cache, bytes) else _lite_json_cache
+    return f'data: {{"v":{ver},{lite_str[1:]}\n\n'.encode("utf-8")
 
 def notify_sse_clients():
     """通知所有SSE客户端状态更新"""
