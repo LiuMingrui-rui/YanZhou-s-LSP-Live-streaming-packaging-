@@ -1165,11 +1165,11 @@
           renderQuickGrid(); renderProgList(); updateProgNav(); updateNextPreview();
           renderHostList(); updateSlotCards();
         });
-        fetch("/api/lite-state").then(r => r.json()).then(d => { if (d.theme) { S.theme = d.theme; applyTheme(d.theme); } applyState(d); resetReconnectDelay(); setConn(d.displayClients !== undefined ? d.displayClients > 0 : true); }).catch(() => { setConn(false); startReconnectPolling(poll); });
+        fetch("/api/lite-state").then(r => r.json()).then(d => { if (d.theme) { S.theme = d.theme; applyTheme(d.theme); } applyState(d); resetReconnectDelay(); setConn(d.displayClients !== undefined ? data.displayClients > 0 : true); }).catch(() => { setConn(false); startReconnectPolling(poll); });
       }
       
       function poll() {
-        fetch("/api/lite-state").then(r => r.json()).then(d => { applyState(d); resetReconnectDelay(); setConn(d.displayClients !== undefined ? d.displayClients > 0 : true); }).catch(() => setConn(false));
+        fetch("/api/lite-state").then(r => r.json()).then(d => { applyState(d); resetReconnectDelay(); setConn(d.displayClients !== undefined ? data.displayClients > 0 : true); }).catch(() => setConn(false));
       }
       
       function applySSE(data) {
@@ -1177,9 +1177,8 @@
           clearReconnectTimer();
           resetReconnectDelay();
           applyState(data);
-          setConn(data.displayClients !== undefined ? d.displayClients > 0 : true);
+          setConn(data.displayClients !== undefined ? data.displayClients > 0 : true);
         }
-      }
       }
       
       window.onload = function() {
